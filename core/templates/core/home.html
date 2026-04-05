@@ -9,7 +9,7 @@
 			<div id="main">
 
 				<!-- Buscar -->
-					<section id="buscar" class="one dark cover">
+					<section id="buscar" class="one dark cover" v-show="seccionActual === 'buscar'">
 						<div class="container">
 
 							<header>
@@ -32,7 +32,7 @@
 					</section>
 
 				<!-- Movimientos de expedientes -->
-					<section id="movimientos" class="two">
+					<section id="movimientos" class="two" v-show="seccionActual === 'movimientos'">
 						<div class="container">
 
 							<header>
@@ -65,7 +65,7 @@
 					</section>
 
 				<!-- Para crear expedientes -->
-					<section id="crear" class="three">
+					<section id="crear" class="three" v-show="seccionActual === 'crear'">
 						<div class="container">
 
 							<header>
@@ -100,7 +100,7 @@
 					</section>
 
 				<!-- Contacto -->
-					<section id="contacto" class="four">
+					<section id="contacto" class="four" v-show="seccionActual === 'contacto'">
 						<div class="container">
 
 							<header>

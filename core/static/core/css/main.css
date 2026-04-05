@@ -2291,6 +2291,30 @@ input, select, textarea {
 				margin-left: 300px;
 			}
 
+			/* Eliminar puntos y sangría del footer */
+				.footer-list {
+					list-style: none;     /* Quita los puntos */
+					padding: 0;          /* Quita el espacio a la izquierda que deja la lista */
+					margin: 0;           /* Quita márgenes externos */
+					text-align: center;  /* Opcional: centra el texto si lo deseas */
+				}
+
+				.footer-list li {
+					list-style: none;    /* Refuerza que no haya puntos */
+					margin-bottom: 15px; /* Da un poco de espacio entre cada renglón */
+					line-height: 1.5;    /* Mejora la legibilidad del texto */
+				}
+
+				/* Estilo para que las imágenes de los logos no se vean pegadas al texto */
+				.footer-list img {
+					margin-left: 5px;
+					transition: opacity 0.3s;
+				}
+
+				.footer-list img:hover {
+					opacity: 0.7;
+				}
+
 		/* Main */
 
 			#main {

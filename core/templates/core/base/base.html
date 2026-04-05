@@ -6,10 +6,22 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
 		<link rel="stylesheet" href="{% static 'core/css/main.css'%}" />
+		<!-- Importar VUE -->
+		<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+		<style>
+        /* Estilo básico para ocultar secciones */
+			section { border: none !important; }
+			/* Estilo opcional para suavizar la transición */
+			[v-cloak] { display: none; } 
+		</style>
 	</head>
 	<body class="is-preload">
-         {% include './snippets/navbar.html' %}
-         {% block body %}{% endblock %}
+		<!-- envolvemos todo en app para darle control a vue -->
+         <div id="app" v-cloak>
+			{% include './snippets/navbar.html' %}
+			
+			{% block body %}{% endblock %}
+		</div>
 		
 
 		<!-- Scripts -->
@@ -20,6 +32,18 @@
 			<script src="{% static 'core/js/breakpoints.min.js' %}"></script>
 			<script src="{% static 'core/js/util.js' %}"></script>
 			<script src="{% static 'core/js/main.js' %}"></script>
+
+		<!-- Lógica de Vue -->
+		<script>
+			const { createApp } = Vue
+			createApp({
+				data() {
+					return {
+						seccionActual: 'buscar' // por defecto muestra
+					}
+				}
+			}).mount('#app')
+		</script>
         
         {% include './snippets/footer.html' %}
 	</body>
