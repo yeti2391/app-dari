@@ -9,9 +9,8 @@
 			<div id="main">
 
 				<!-- Buscar -->
-					<section id="buscar" class="one dark cover" v-show="seccionActual === 'buscar'">
+					<section id="buscar" class="dark cover" v-show="seccionActual === 'buscar'">
 						<div class="container">
-
 							<header>
 								<h2 class="alt">Buscar información existente</h2>
 								<p>Ingrese los datos que desea consultar en nuestro Archivo.</p>
@@ -32,7 +31,7 @@
 					</section>
 
 				<!-- Movimientos de expedientes -->
-					<section id="movimientos" class="two" v-show="seccionActual === 'movimientos'">
+					<section id="movimientos" v-show="seccionActual === 'movimientos'">
 						<div class="container">
 
 							<header>
@@ -65,7 +64,7 @@
 					</section>
 
 				<!-- Para crear expedientes -->
-					<section id="crear" class="three" v-show="seccionActual === 'crear'">
+					<section id="crear" v-show="seccionActual === 'crear'">
 						<div class="container">
 
 							<header>
@@ -100,7 +99,7 @@
 					</section>
 
 				<!-- Contacto -->
-					<section id="contacto" class="four" v-show="seccionActual === 'contacto'">
+					<section id="contacto" v-show="seccionActual === 'contacto'">
 						<div class="container">
 
 							<header>
