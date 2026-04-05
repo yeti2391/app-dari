@@ -21,10 +21,12 @@
 			{% include './snippets/navbar.html' %}
 			
 			{% block body %}{% endblock %}
+
+			{% include './snippets/footer.html' %}
 		</div>
 		
 
-		<!-- Scripts -->
+		<!-- Scripts awesome-->
 			<script src="{% static 'core/js/jquery.min.js' %}"></script>
 			<script src="{% static 'core/js/jquery.scrolly.min.js' %}"></script>
 			<script src="{% static 'core/js/jquery.scrollex.min.js' %}"></script>
@@ -45,6 +47,5 @@
 			}).mount('#app')
 		</script>
         
-        {% include './snippets/footer.html' %}
 	</body>
 </html>

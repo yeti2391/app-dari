@@ -2177,6 +2177,7 @@ input, select, textarea {
 					background: rgba(255, 255, 255, 0.1);
 				}
 
+#header + #main + #footer, /* Aseguramos que siga al main */
 /* Footer */
 
 	#footer {
@@ -2186,6 +2187,8 @@ input, select, textarea {
 		padding: 3em 0 4em 0;
 		box-shadow: inset 0 1px 0 0 rgba(0, 0, 0, 0.05), inset 0 0.1em 0.1em 0 rgba(0, 0, 0, 0.025);
 		font-size: 0.8em;
+		position: relative; /* Asegura que se posicione después del flujo de las secciones */
+		clear: both;
 	}
 
 		#footer .copyright {
@@ -2221,6 +2224,11 @@ input, select, textarea {
 			box-shadow: inset 0 1px 0 0 rgba(0, 0, 0, 0.05), inset 0 0.1em 0.1em 0 rgba(0, 0, 0, 0.025);
 			text-align: center;
 			background-image: url("images/overlay.png");
+			min-height: 100vh;            /* Ocupa el 100% de la altura de la ventana */
+			display: flex;                /* Activamos flexbox */
+			flex-direction: column;       /* Orientación vertical */
+			justify-content: center;      /* Centra el contenido verticalmente */
+			align-items: center;          /* Centra el contenido horizontalmente */
 		}
 
 			#main > section.dark {
@@ -2289,6 +2297,7 @@ input, select, textarea {
 
 			#footer {
 				margin-left: 300px;
+				
 			}
 
 			/* Eliminar puntos y sangría del footer */
@@ -2577,7 +2586,7 @@ input, select, textarea {
 		/* Footer */
 
 			#footer {
-				margin-left: 0;
+				margin-left: 0 !important; /* Forzamos que no tenga margen en móvil */
 			}
 
 		/* Main */
@@ -2596,7 +2605,7 @@ input, select, textarea {
 			}
 
 				#main > section {
-					padding: 3em 0;
+					min-height: 100vh; /* Mantenemos el alto total en móvil si lo deseas */
 				}
 
 				#main section.cover {
