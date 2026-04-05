@@ -1,0 +1,206 @@
+{% extends "core/base/base.html" %}
+
+{% block title %}DARI{% endblock %}
+
+{% block body %}
+
+
+		<!-- Main -->
+			<div id="main">
+
+<!-- Buscar -->
+					<section id="buscar" class="one dark cover">
+						<div class="container">
+
+							<header>
+								<h2 class="alt">Buscar información existente</h2>
+								<p>Ingrese los datos que desea consultar en nuestro Archivo.</p>
+							</header>
+
+							<form method="get" action="#" class="search-form">
+								<div class="row">
+									<div class="col-8 col-12-mobile">
+										<input type="text" name="query" placeholder="Ingrese término de búsqueda" />
+									</div>
+									<div class="col-4 col-12-mobile">
+										<input type="submit" value="Buscar" class="button" />
+									</div>
+								</div>
+							</form>
+
+						</div>
+					</section>
+
+				<!-- Movimientos de expedientes -->
+					<section id="movimientos" class="two">
+						<div class="container">
+
+							<header>
+								<h2>Movimientos de expedientes</h2>
+							</header>
+
+							<p>Ingresa el código del expediente para ver su historial de movimientos entre oficinas.</p>
+
+							<form method="get" action="#" class="search-form">
+								<div class="row">
+									<div class="col-8 col-12-mobile">
+										<input type="text" name="codigo" placeholder="Código del expediente (ej. XX001)" />
+									</div>
+									<div class="col-4 col-12-mobile">
+										<input type="submit" value="Mostrar" class="button" />
+									</div>
+								</div>
+							</form>
+
+							<div class="movimientos-lista">
+								<h3>Historial de movimientos - Expediente XX001</h3>
+								<ul>
+									<li><strong>Fecha:</strong> 2024-01-15 | <strong>De:</strong> Oficina DARI | <strong>A:</strong> Oficina Jurídica</li>
+									<li><strong>Fecha:</strong> 2024-02-20 | <strong>De:</strong> Oficina Jurídica | <strong>A:</strong> Oficina Administrativa</li>
+									<li><strong>Fecha:</strong> 2024-03-10 | <strong>De:</strong> Oficina Administrativa | <strong>A:</strong> Oficina Final</li>
+								</ul>
+							</div>
+
+						</div>
+					</section>
+
+				<!-- About Me -->
+					<section id="crear" class="three">
+						<div class="container">
+
+							<header>
+								<h2>Crear expediente</h2>
+							</header>
+
+							<p>Selecciona la oficina solicitante y agrega observaciones para crear un nuevo expediente.</p>
+
+							<form method="post" action="#">
+								<div class="row">
+									<div class="col-6 col-12-mobile">
+										<label for="oficina">Oficina solicitante:</label>
+										<select name="oficina" id="oficina">
+											<option value="">Selecciona una oficina</option>
+											<option value="dari">DARI</option>
+											<option value="dai">DAI</option>
+											<option value="dci">DCI</option>
+											<option value="otra">OTRA</option>
+										</select>
+									</div>
+									<div class="col-12">
+										<label for="observaciones">Observaciones:</label>
+										<textarea name="observaciones" id="observaciones" placeholder="Ingresa las observaciones del expediente"></textarea>
+									</div>
+									<div class="col-12">
+										<input type="submit" value="Crear expediente" />
+									</div>
+								</div>
+							</form>
+
+						</div>
+					</section>
+
+				<!-- Contacto -->
+					<section id="contact" class="four">
+						<div class="container">
+
+							<header>
+								<h2>Contacto</h2>
+							</header>
+
+							<p>Elementum sem parturient nulla quam placerat viverra
+							mauris non cum elit tempus ullamcorper dolor. Libero rutrum ut lacinia
+							donec curae mus. Eleifend id porttitor ac ultricies lobortis sem nunc
+							orci ridiculus faucibus a consectetur. Porttitor curae mauris urna mi dolor.</p>
+
+							<form method="post" action="#">
+								<div class="row">
+									<div class="col-6 col-12-mobile">
+										<label>Nombre:</label>
+										<input type="text" value="Jane Doe" readonly />
+									</div>
+									<div class="col-6 col-12-mobile">
+										<label>Email:</label>
+										<input type="email" value="jane.doe@minterior.gub.uy" readonly />
+									</div>
+									<div class="col-12">
+										<textarea name="message" placeholder="Mensaje"></textarea>
+									</div>
+									<div class="col-12">
+										<input type="submit" value="Enviar" />
+									</div>
+								</div>
+							</form>
+
+						</div>
+					</section>
+
+			</div>
+
+{% endblock %}
+
+
+
+
+<!--Ejemplo de contenido -->
+<!-- 
+<section id="movimientos" class="two">
+						<div class="container">
+
+							<header>
+								<h2>Movimientos de expedientes</h2>
+							</header>
+
+							<p>Vitae natoque dictum etiam semper magnis enim feugiat convallis convallis
+							egestas rhoncus ridiculus in quis risus amet curabitur tempor orci penatibus.
+							Tellus erat mauris ipsum fermentum etiam vivamus eget. Nunc nibh morbi quis
+							fusce hendrerit lacus ridiculus.</p>
+
+							<div class="row">
+								<div class="col-4 col-12-mobile">
+									<article class="item">
+										<a href="#" class="image fit"><img src="images/pic02.jpg" alt="" /></a>
+										<header>
+											<h3>Ipsum Feugiat</h3>
+										</header>
+									</article>
+									<article class="item">
+										<a href="#" class="image fit"><img src="images/pic03.jpg" alt="" /></a>
+										<header>
+											<h3>Rhoncus Semper</h3>
+										</header>
+									</article>
+								</div>
+								<div class="col-4 col-12-mobile">
+									<article class="item">
+										<a href="#" class="image fit"><img src="images/pic04.jpg" alt="" /></a>
+										<header>
+											<h3>Magna Nullam</h3>
+										</header>
+									</article>
+									<article class="item">
+										<a href="#" class="image fit"><img src="images/pic05.jpg" alt="" /></a>
+										<header>
+											<h3>Natoque Vitae</h3>
+										</header>
+									</article>
+								</div>
+								<div class="col-4 col-12-mobile">
+									<article class="item">
+										<a href="#" class="image fit"><img src="images/pic06.jpg" alt="" /></a>
+										<header>
+											<h3>Dolor Penatibus</h3>
+										</header>
+									</article>
+									<article class="item">
+										<a href="#" class="image fit"><img src="images/pic07.jpg" alt="" /></a>
+										<header>
+											<h3>Orci Convallis</h3>
+										</header>
+									</article>
+								</div>
+							</div>
+
+						</div>
+					</section>
+
+-->
