@@ -38,33 +38,133 @@
 		<!-- Lógica de Vue -->
 		<script>
 			const { createApp } = Vue
-			createApp({
-				data() {
-					return {
-						seccionActual: 'buscar',
-						alfrescoStatus: false, // Controla el Switch
-						nuevaPersona: { nombre: '', apellido: '', doc: '', nacionalidad: 'Uruguaya' },
-						personasVinculadas: [
-							{ nombre: 'Juan', apellido: 'Pérez', doc: '1.234.567-8', nacionalidad: 'Uruguaya' }
-						]
-					}
-				},
-				methods: {
-					agregarPersona() {
-						if(this.nuevaPersona.nombre && this.nuevaPersona.doc) {
-							this.personasVinculadas.push({...this.nuevaPersona});
-							// Limpiar campos
-							this.nuevaPersona = { nombre: '', apellido: '', doc: '', nacionalidad: 'Uruguaya' };
-						} else {
-							alert("Por favor completa Nombre y Documento");
+
+				createApp({
+					data() {
+						return {
+							seccionActual: 'buscar',
+							oficinas: [], 
+							queryBusqueda: '',
+							resultados: [],
+							cargando: false,
+							
+							// Detalles del expediente seleccionado
+							expediente: {
+								id: null,
+								codigo: '',
+								subido_alfresco: false,
+								personas: [],
+								movimientos: []
+							},
+							
+							// Formulario Crear Expediente
+							nuevoExpediente: {
+								codigo: '',
+								oficina_id: '',
+								fecha: new Date().toISOString().split('T')[0],
+								observaciones: ''
+							},
+
+							// ESTO FALTABA: Datos para vincular personas
+							nuevaPersona: { 
+								nombre: '', 
+								apellido: '', 
+								doc: '', 
+								nacionalidad: 'Uruguaya' 
+							},
+							personasVinculadas: [] // Lista temporal de la tabla
 						}
 					},
-					verDetalles(idExpediente) {
-						// Aquí en el futuro cargarás los datos del servidor vía fetch/axios
-						this.seccionActual = 'detalles';
+					mounted() {
+						this.cargarOficinas();
+					},
+					methods: {
+						async cargarOficinas() {
+							try {
+								const response = await fetch('/api/oficinas/');
+								const data = await response.json();
+								this.oficinas = data.oficinas;
+							} catch (e) { console.error("Error cargando oficinas"); }
+						},
+
+						async buscar() {
+							// Si no hay texto, no buscamos nada
+							if (this.queryBusqueda.trim() === '') return;
+   							this.cargando = true;
+							try {
+								// Usamos encodeURIComponent para que carácteres especiales o espacios no rompan la URL
+								const response = await fetch(`/api/buscar/?q=${encodeURIComponent(this.queryBusqueda)}`);
+								const data = await response.json();
+								this.resultados = data.resultados;
+							} catch (error) {
+								console.error("Error en búsqueda:", error);
+							} finally {
+								this.cargando = false;
+							}
+						},
+
+						async verDetalles(id) {
+							try {
+								const response = await fetch(`/api/expediente/${id}/`);
+								const data = await response.json();
+								this.expediente = data;
+								// Al cargar detalles, también podrías sincronizar personasVinculadas si quisieras
+								this.personasVinculadas = data.personas; 
+								this.seccionActual = 'detalles';
+							} catch (error) {
+								alert("Error al cargar detalles");
+							}
+						},
+
+						async guardarCambioAlfresco() {
+							try {
+								const response = await fetch(`/api/expediente/${this.expediente.id}/alfresco/`, {
+									method: 'POST',
+									headers: {
+										'Content-Type': 'application/json',
+										'X-CSRFToken': '{{ csrf_token }}'
+									},
+									body: JSON.stringify({ estado: this.expediente.subido_alfresco })
+								});
+								if(response.ok) alert("Estado de Alfresco actualizado en base de datos");
+							} catch (error) {
+								alert("Error al guardar");
+							}
+						},
+
+						async guardarNuevoExpediente() {
+							try {
+								const response = await fetch('/api/expediente/crear/', {
+									method: 'POST',
+									headers: {
+										'Content-Type': 'application/json',
+										'X-CSRFToken': '{{ csrf_token }}'
+									},
+									body: JSON.stringify(this.nuevoExpediente)
+								});
+								if (response.ok) {
+									alert("Expediente creado con éxito");
+									this.seccionActual = 'buscar';
+									this.nuevoExpediente = { codigo: '', oficina_id: '', fecha: new Date().toISOString().split('T')[0], observaciones: '' };
+								}
+							} catch (error) {
+								alert("Error al crear expediente");
+							}
+						},
+
+						// ESTO FALTABA: Método para el botón de agregar persona
+						agregarPersona() {
+							if(this.nuevaPersona.nombre && this.nuevaPersona.doc) {
+								// Agregamos a la lista visual
+								this.personasVinculadas.push({...this.nuevaPersona});
+								// Limpiamos el formulario
+								this.nuevaPersona = { nombre: '', apellido: '', doc: '', nacionalidad: 'Uruguaya' };
+							} else {
+								alert("Complete al menos Nombre y Documento");
+							}
+						}
 					}
-				}
-			}).mount('#app')
+				}).mount('#app')
 		</script>
         
 	</body>

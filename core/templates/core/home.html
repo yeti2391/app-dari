@@ -11,15 +11,13 @@
 				<!-- Buscar -->
 					<section id="buscar" v-show="seccionActual === 'buscar'">
 						<div class="container">
-							<header>
-								<h2>Buscar Información</h2>
-							</header>
-							
+							<header><h2>Buscar Información</h2></header>
 							<div class="form-container">
-								<form method="get" action="#">
+								<!-- .prevent evita que la página se recargue -->
+								<form @submit.prevent="buscar">
 									<div class="row gtr-50">
 										<div class="col-9 col-12-mobile">
-											<input type="text" placeholder="Expediente, persona, documento..." />
+											<input type="text" v-model="queryBusqueda" placeholder="Ingrese término de búsqueda..." />
 										</div>
 										<div class="col-3 col-12-mobile">
 											<button type="submit" class="button fit icon solid fa-search">Buscar</button>
@@ -27,15 +25,17 @@
 									</div>
 								</form>
 							</div>
-							<!-- RESULTADOS (Ejemplo estético) -->
-							<div style="margin-top: 3em;">
-								<div class="result-card">
-									<span class="badge">Expediente</span>
-									<h4>EXP-2024-001: Trámite de Residencia</h4>
-									<p>Último movimiento: Oficina Jurídica - 12/03/2024</p>
-									<button @click="verDetalles(1)" class="button small">Gestionar Detalles</button>
+
+							<!-- Listado de Resultados Dinámico -->
+							<div style="margin-top: 3em;" v-if="resultados.length > 0">
+								<div v-for="res in resultados" :key="res.id" class="result-card">
+									<span class="badge">{{ res.oficina }}</span>
+									<h4>Código: {{ res.codigo }}</h4>
+									<p>Ingresado el: {{ res.fecha_ingreso }}</p>
+									<button @click="verDetalles(res.id)" class="button small">Gestionar Detalles</button>
 								</div>
 							</div>
+							<p v-else-if="!cargando && queryBusqueda" style="margin-top: 2em;">No se encontraron resultados.</p>
 						</div>
 					</section>
 
@@ -46,7 +46,16 @@
 							<header>
 								<h2>Movimientos de expedientes</h2>
 							</header>
-
+							<div class="form-container">
+								<div class="row gtr-50">
+									<div class="col-9">
+										<input type="text" placeholder="Ingrese código del expediente para ver historial...">
+									</div>
+									<div class="col-3">
+										<button class="button fit">Consultar</button>
+									</div>
+								</div>
+							</div>
 							<div class="timeline">
 								<!-- Item 1 -->
 								<div class="timeline-item">
@@ -71,35 +80,32 @@
 					</section>
 
 				<!-- Para crear expedientes -->
-				<!-- SECCIÓN CREAR (Actualizada para ser igual a Buscar) -->
 				<section id="crear" v-show="seccionActual === 'crear'">
 					<div class="container">
-						<header>
-							<h2>Crear Nuevo Expediente</h2>
-							<p>Complete los datos básicos para iniciar el registro.</p>
-						</header>
-
+						<header><h2>Crear Expediente</h2></header>
 						<div class="form-container">
-							<form method="post" action="#">
+							<form @submit.prevent="guardarNuevoExpediente">
 								<div class="row gtr-uniform">
 									<div class="col-6 col-12-mobile">
-										<label>Oficina Solicitante</label>
-										<select name="oficina">
-											<option value="dari">DARI</option>
-											<option value="dai">DAI</option>
-											<option value="dci">DCI</option>
-										</select>
+										<label>Código Interno</label>
+										<input type="text" v-model="nuevoExpediente.codigo" required placeholder="Ej: EXP-100/24">
 									</div>
 									<div class="col-6 col-12-mobile">
-										<label>Tipo de Expediente</label>
-										<input type="text" placeholder="Ej: Administrativo, Judicial..." />
+										<label>Oficina Solicitante</label>
+										<select v-model="nuevoExpediente.oficina_id" required>
+											<option value="">Seleccione una oficina...</option>
+											<!-- ESTO CARGA LAS OFICINAS REALES DEL BACKEND -->
+											<option v-for="oficina in oficinas" :key="oficina.id" :value="oficina.id">
+												{{ oficina.nombre }}
+											</option>
+										</select>
 									</div>
 									<div class="col-12">
 										<label>Observaciones Iniciales</label>
-										<textarea placeholder="Descripción breve del motivo..."></textarea>
+										<textarea v-model="nuevoExpediente.observaciones"></textarea>
 									</div>
 									<div class="col-12">
-										<input type="submit" value="Crear Expediente" class="button primary fit" />
+										<input type="submit" value="Crear Expediente" class="button primary fit">
 									</div>
 								</div>
 							</form>
@@ -107,12 +113,12 @@
 					</div>
 				</section>
 
-				<!-- NUEVA SECCIÓN: DETALLES DEL EXPEDIENTE -->
+				<!-- DETALLES DEL EXPEDIENTE -->
 				<section id="detalles" v-show="seccionActual === 'detalles'">
 					<div class="container">
 						<header>
-							<a href="#" @click.prevent="seccionActual = 'buscar'" style="float: left; border: none;"><i class="fas fa-arrow-left"></i> Volver</a>
-							<h2>Expediente: XX-001/2024</h2>
+							<a href="#" @click.prevent="seccionActual = 'buscar'"><i class="fas fa-arrow-left"></i> Volver</a>
+							<h2>Expediente: {{ expediente.codigo }}</h2>
 						</header>
 
 						<div class="row">
@@ -122,14 +128,27 @@
 									<h3>Estado Digital</h3>
 									<div class="switch-container">
 										<label class="switch">
-											<input type="checkbox" v-model="alfrescoStatus">
+											<input type="checkbox" v-model="expediente.subido_alfresco">
 											<span class="slider"></span>
 										</label>
 										{% verbatim %}
-										<span>{{ alfrescoStatus ? 'Subido a Alfresco' : 'No subido a Alfresco' }}</span>
+										<span>{{ expediente.subido_alfresco ? 'Subido a Alfresco' : 'No subido' }}</span>
 										{% endverbatim %}
 									</div>
-									<button class="button small fit">Guardar Estado</button>
+									<!-- AQUÍ ESTÁ EL BOTÓN QUE PEDISTE -->
+									<button class="button small fit" @click="guardarCambioAlfresco">Confirmar cambio Alfresco</button>
+								</div>
+
+								<!-- Historial visual dentro de detalles -->
+								<div class="timeline" style="margin-top: 2em;">
+									<h3 style="font-size: 0.9em;">Historial de Movimientos</h3>
+									<div v-for="m in expediente.movimientos" class="timeline-item" style="font-size: 0.7em;">
+										<div class="timeline-dot"></div>
+										<div class="timeline-content">
+											<span class="timeline-date">{{ m.fecha }}</span>
+											<p><strong>{{ m.tipo }}</strong><br>{{ m.obs }}</p>
+										</div>
+									</div>
 								</div>
 							</div>
 

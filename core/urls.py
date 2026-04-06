@@ -1,6 +1,20 @@
+# from django.urls import path
+# from .views import home
+# 
+# urlpatterns = [
+#     path('', home, name='home'),
+# ]
+
 from django.urls import path
-from .views import home
+from . import views
 
 urlpatterns = [
-    path('', home, name='home'),
+    path('', views.home, name='home'),
+    
+    # Endpoints de API para Vue
+    path('api/buscar/', views.buscar_expedientes, name='api_buscar'),
+    path('api/expediente/<int:id>/', views.detalle_expediente, name='api_detalle'),
+    path('api/expediente/<int:id>/alfresco/', views.actualizar_alfresco, name='api_alfresco'),
+    path('api/expediente/crear/', views.crear_expediente, name='api_crear'),
+    path('api/oficinas/', views.lista_oficinas, name='api_oficinas'),
 ]
