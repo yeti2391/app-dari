@@ -61,6 +61,10 @@
 					if ($section.length < 1)
 						return;
 
+				// Skip links with href="#"
+					if (id === '#')
+						return;
+
 				// Scrollex.
 					$section.scrollex({
 						mode: 'middle',

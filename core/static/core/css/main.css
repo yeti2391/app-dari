@@ -2046,7 +2046,7 @@ input, select, textarea {
 		-webkit-justify-content: space-between;
 		-ms-justify-content: space-between;
 		justify-content: space-between;
-		background: #5983b0 url("images/overlay.png");
+		background: #182534 url("images/overlay.png");
 		box-shadow: inset -0.25em 0 0.25em 0 rgba(0, 0, 0, 0.1);
 		color: #fff;
 		height: 100%;
@@ -2122,6 +2122,8 @@ input, select, textarea {
 			position: absolute;
 			left: 0;
 			top: 0;
+			filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.7)); /* Agrega un resplandor blanco alrededor de la imagen */
+			border-radius: 50%; /* Hace que la imagen sea circular */
 		}
 
 	#nav ul {
@@ -2176,6 +2178,10 @@ input, select, textarea {
 					color: #fff;
 					background: rgba(255, 255, 255, 0.1);
 				}
+
+					#nav ul li a:hover span:before {
+						color: #fff;
+					}
 
 #header + #main + #footer, /* Aseguramos que siga al main */
 /* Footer */
