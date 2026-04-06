@@ -2183,9 +2183,7 @@ input, select, textarea {
 						color: #fff;
 					}
 
-#header + #main + #footer, /* Aseguramos que siga al main */
 /* Footer */
-
 	#footer {
 		margin-left: 375px;
 		text-align: center;
@@ -2193,8 +2191,10 @@ input, select, textarea {
 		padding: 3em 0 4em 0;
 		box-shadow: inset 0 1px 0 0 rgba(0, 0, 0, 0.05), inset 0 0.1em 0.1em 0 rgba(0, 0, 0, 0.025);
 		font-size: 0.8em;
-		position: relative; /* Asegura que se posicione después del flujo de las secciones */
+		position: relative;
 		clear: both;
+		display: block; /* Asegura que ocupe su lugar */
+		border: none;
 	}
 
 		#footer .copyright {
@@ -2484,7 +2484,6 @@ input, select, textarea {
 				top: 0;
 				width: 275px;
 				z-index: 10002;
-				width: 275px;
 				background: #222729 url("images/overlay.png");
 				box-shadow: inset -0.25em 0 0.25em 0 rgba(0, 0, 0, 0.125);
 			}
@@ -2607,7 +2606,7 @@ input, select, textarea {
 				-ms-transition: -ms-transform 0.5s ease;
 				transition: transform 0.5s ease;
 				padding-bottom: 1px;
-				margin-left: 0;
+				margin-left: 0 !important; /* Forzamos que no tenga margen en móvil */;
 			}
 
 				#main > section {
