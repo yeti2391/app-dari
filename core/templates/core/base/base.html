@@ -41,7 +41,27 @@
 			createApp({
 				data() {
 					return {
-						seccionActual: 'buscar' // por defecto muestra
+						seccionActual: 'buscar',
+						alfrescoStatus: false, // Controla el Switch
+						nuevaPersona: { nombre: '', apellido: '', doc: '', nacionalidad: 'Uruguaya' },
+						personasVinculadas: [
+							{ nombre: 'Juan', apellido: 'Pérez', doc: '1.234.567-8', nacionalidad: 'Uruguaya' }
+						]
+					}
+				},
+				methods: {
+					agregarPersona() {
+						if(this.nuevaPersona.nombre && this.nuevaPersona.doc) {
+							this.personasVinculadas.push({...this.nuevaPersona});
+							// Limpiar campos
+							this.nuevaPersona = { nombre: '', apellido: '', doc: '', nacionalidad: 'Uruguaya' };
+						} else {
+							alert("Por favor completa Nombre y Documento");
+						}
+					},
+					verDetalles(idExpediente) {
+						// Aquí en el futuro cargarás los datos del servidor vía fetch/axios
+						this.seccionActual = 'detalles';
 					}
 				}
 			}).mount('#app')

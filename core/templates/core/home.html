@@ -12,21 +12,30 @@
 					<section id="buscar" v-show="seccionActual === 'buscar'">
 						<div class="container">
 							<header>
-								<h2>Buscar información existente</h2>
-								<p>Ingrese los datos que desea consultar en nuestro Archivo.</p>
+								<h2>Buscar Información</h2>
 							</header>
-
-							<form method="get" action="#" class="search-form">
-								<div class="row">
-									<div class="col-8 col-12-mobile">
-										<input type="text" name="query" placeholder="Ingrese término de búsqueda" />
+							
+							<div class="form-container">
+								<form method="get" action="#">
+									<div class="row gtr-50">
+										<div class="col-9 col-12-mobile">
+											<input type="text" placeholder="Expediente, persona, documento..." />
+										</div>
+										<div class="col-3 col-12-mobile">
+											<button type="submit" class="button fit icon solid fa-search">Buscar</button>
+										</div>
 									</div>
-									<div class="col-4 col-12-mobile">
-										<input type="submit" value="Buscar" class="button" />
-									</div>
+								</form>
+							</div>
+							<!-- RESULTADOS (Ejemplo estético) -->
+							<div style="margin-top: 3em;">
+								<div class="result-card">
+									<span class="badge">Expediente</span>
+									<h4>EXP-2024-001: Trámite de Residencia</h4>
+									<p>Último movimiento: Oficina Jurídica - 12/03/2024</p>
+									<button @click="verDetalles(1)" class="button small">Gestionar Detalles</button>
 								</div>
-							</form>
-
+							</div>
 						</div>
 					</section>
 
@@ -38,65 +47,135 @@
 								<h2>Movimientos de expedientes</h2>
 							</header>
 
-							<p>Ingresa el código del expediente para ver su historial de movimientos entre oficinas.</p>
-
-							<form method="get" action="#" class="search-form">
-								<div class="row">
-									<div class="col-8 col-12-mobile">
-										<input type="text" name="codigo" placeholder="Código del expediente (ej. XX001)" />
-									</div>
-									<div class="col-4 col-12-mobile">
-										<input type="submit" value="Mostrar" class="button" />
+							<div class="timeline">
+								<!-- Item 1 -->
+								<div class="timeline-item">
+									<div class="timeline-dot"></div>
+									<div class="timeline-content">
+										<span class="timeline-date">20 Mar 2024</span>
+										<h4>Oficina Administrativa</h4>
+										<p>Recibido por: Juan Pérez - <small>En revisión de firmas</small></p>
 									</div>
 								</div>
-							</form>
-
-							<div class="movimientos-lista">
-								<h3>Historial de movimientos - Expediente XX001</h3>
-								<ul>
-									<li><strong>Fecha:</strong> 2024-01-15 | <strong>De:</strong> Oficina DARI | <strong>A:</strong> Oficina Jurídica</li>
-									<li><strong>Fecha:</strong> 2024-02-20 | <strong>De:</strong> Oficina Jurídica | <strong>A:</strong> Oficina Administrativa</li>
-									<li><strong>Fecha:</strong> 2024-03-10 | <strong>De:</strong> Oficina Administrativa | <strong>A:</strong> Oficina Final</li>
-								</ul>
+								<!-- Item 2 -->
+								<div class="timeline-item">
+									<div class="timeline-dot"></div>
+									<div class="timeline-content">
+										<span class="timeline-date">15 Mar 2024</span>
+										<h4>Oficina DARI</h4>
+										<p>Salida hacia Administración - <small>Código: 88291</small></p>
+									</div>
+								</div>
 							</div>
-
 						</div>
 					</section>
 
 				<!-- Para crear expedientes -->
-					<section id="crear" v-show="seccionActual === 'crear'">
-						<div class="container">
+				<!-- SECCIÓN CREAR (Actualizada para ser igual a Buscar) -->
+				<section id="crear" v-show="seccionActual === 'crear'">
+					<div class="container">
+						<header>
+							<h2>Crear Nuevo Expediente</h2>
+							<p>Complete los datos básicos para iniciar el registro.</p>
+						</header>
 
-							<header>
-								<h2>Crear expediente</h2>
-							</header>
-
-							<p>Selecciona la oficina solicitante y agrega observaciones para crear un nuevo expediente.</p>
-
+						<div class="form-container">
 							<form method="post" action="#">
-								<div class="row">
+								<div class="row gtr-uniform">
 									<div class="col-6 col-12-mobile">
-										<label for="oficina">Oficina solicitante:</label>
-										<select name="oficina" id="oficina">
-											<option value="">Selecciona una oficina</option>
+										<label>Oficina Solicitante</label>
+										<select name="oficina">
 											<option value="dari">DARI</option>
 											<option value="dai">DAI</option>
 											<option value="dci">DCI</option>
-											<option value="otra">OTRA</option>
 										</select>
 									</div>
-									<div class="col-12">
-										<label for="observaciones">Observaciones:</label>
-										<textarea name="observaciones" id="observaciones" placeholder="Ingresa las observaciones del expediente"></textarea>
+									<div class="col-6 col-12-mobile">
+										<label>Tipo de Expediente</label>
+										<input type="text" placeholder="Ej: Administrativo, Judicial..." />
 									</div>
 									<div class="col-12">
-										<input type="submit" value="Crear expediente" />
+										<label>Observaciones Iniciales</label>
+										<textarea placeholder="Descripción breve del motivo..."></textarea>
+									</div>
+									<div class="col-12">
+										<input type="submit" value="Crear Expediente" class="button primary fit" />
 									</div>
 								</div>
 							</form>
-
 						</div>
-					</section>
+					</div>
+				</section>
+
+				<!-- NUEVA SECCIÓN: DETALLES DEL EXPEDIENTE -->
+				<section id="detalles" v-show="seccionActual === 'detalles'">
+					<div class="container">
+						<header>
+							<a href="#" @click.prevent="seccionActual = 'buscar'" style="float: left; border: none;"><i class="fas fa-arrow-left"></i> Volver</a>
+							<h2>Expediente: XX-001/2024</h2>
+						</header>
+
+						<div class="row">
+							<!-- Columna Izquierda: Switch Alfresco y Datos Generales -->
+							<div class="col-4 col-12-mobile">
+								<div class="form-container" style="padding: 1.5em;">
+									<h3>Estado Digital</h3>
+									<div class="switch-container">
+										<label class="switch">
+											<input type="checkbox" v-model="alfrescoStatus">
+											<span class="slider"></span>
+										</label>
+										{% verbatim %}
+										<span>{{ alfrescoStatus ? 'Subido a Alfresco' : 'No subido a Alfresco' }}</span>
+										{% endverbatim %}
+									</div>
+									<button class="button small fit">Guardar Estado</button>
+								</div>
+							</div>
+
+							<!-- Columna Derecha: Vincular Personas -->
+							<div class="col-8 col-12-mobile">
+								<div class="form-container">
+									<h3>Vincular Personas</h3>
+									<div class="row gtr-25">
+										<div class="col-6"><input type="text" placeholder="Nombre" v-model="nuevaPersona.nombre"></div>
+										<div class="col-6"><input type="text" placeholder="Apellido" v-model="nuevaPersona.apellido"></div>
+										<div class="col-4"><input type="text" placeholder="Documento" v-model="nuevaPersona.doc"></div>
+										<div class="col-4">
+											<select v-model="nuevaPersona.nacionalidad">
+												<option value="Uruguaya">Uruguaya</option>
+												<option value="Argentina">Argentina</option>
+												<option value="Brasilera">Brasilera</option>
+											</select>
+										</div>
+										<div class="col-4">
+											<button class="button primary icon solid fa-plus fit" @click.prevent="agregarPersona">Agregar</button>
+										</div>
+									</div>
+
+									<table class="people-table" v-if="personasVinculadas.length > 0">
+										<thead>
+											<tr>
+												<th>Nombre Completo</th>
+												<th>Documento</th>
+												<th>Nacionalidad</th>
+												<th></th>
+											</tr>
+										</thead>
+										<tbody>
+											<tr v-for="(p, index) in personasVinculadas" :key="index">
+												<td>{{ p.nombre }} {{ p.apellido }}</td>
+												<td>{{ p.doc }}</td>
+												<td>{{ p.nacionalidad }}</td>
+												<td><button class="btn-remove" @click="personasVinculadas.splice(index, 1)"><i class="fas fa-trash"></i></button></td>
+											</tr>
+										</tbody>
+									</table>
+								</div>
+							</div>
+						</div>
+					</div>
+				</section>
 
 				<!-- Contacto -->
 					<section id="contacto" v-show="seccionActual === 'contacto'">
