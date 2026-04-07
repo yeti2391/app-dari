@@ -2866,6 +2866,49 @@ input:checked + .slider:before { transform: translateX(30px); }
     background-color: #273C53;
 }
 
+.form-container label {
+    display: block;
+    font-size: 0.7em;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #5983b0;
+    margin-bottom: 5px;
+    margin-left: 2px;
+}
+
+.form-container input, .form-container select, .form-container textarea {
+    margin-bottom: 10px; /* Espacio entre filas */
+}
+
+/* Estilo para que el datalist parezca un input normal pero con flechita */
+input[list] {
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 1em;
+}
+.form-container label {
+    display: block;
+    font-size: 0.7em;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #5983b0;
+    margin-bottom: 5px;
+    margin-left: 2px;
+}
+
+.form-container input, .form-container select, .form-container textarea {
+    margin-bottom: 10px; /* Espacio entre filas */
+}
+
+/* Estilo para que el datalist parezca un input normal pero con flechita */
+input[list] {
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 1em;
+}
+
 /* Mobile */
 
 	@media screen and (max-width: 736px) {

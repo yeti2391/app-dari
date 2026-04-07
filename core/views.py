@@ -48,7 +48,7 @@ def buscar_expedientes(request):
         
     return JsonResponse({'resultados': data})
 
-# 3. Obtener detalles completos de UN expediente
+# 3. Obtener detalles completos de un expediente
 def detalle_expediente(request, id):
     exp = get_object_or_404(Expediente, id=id)
     
@@ -57,10 +57,13 @@ def detalle_expediente(request, id):
     lista_personas = []
     for vp in personas_vinculadas:
         lista_personas.append({
-            'nombre': f"{vp.persona.primer_nombre} {vp.persona.primer_apellido}",
+            'primer_nombre': vp.persona.primer_nombre,
+            'segundo_nombre': vp.persona.segundo_nombre or '',
+            'primer_apellido': vp.persona.primer_apellido,
+            'segundo_apellido': vp.persona.segundo_apellido or '',
             'documento': vp.persona.documento,
-            'nacionalidad': vp.persona.nacionalidad.nombre,
-            'rol': vp.get_rol_display()
+            'nacionalidad_nombre': vp.persona.nacionalidad.nombre, # Nombre del país
+            'rol': vp.get_rol_display() # Texto legible: "Indagado", "Víctima", etc.
         })
 
     # Movimientos del expediente
@@ -111,3 +114,13 @@ def crear_expediente(request):
 def lista_oficinas(request):
     oficinas = Oficina.objects.all().values('id', 'nombre')
     return JsonResponse({'oficinas': list(oficinas)})
+
+#7 Países
+def lista_paises(request):
+    paises = Pais.objects.all().order_by('nombre').values('id', 'nombre')
+    return JsonResponse({'paises': list(paises)})
+
+# Tipo de documento (si es cedula pasaporte o que)
+def lista_tipos_documento(request):
+    tipos = TipoDocumento.objects.all().values('id', 'nombre')
+    return JsonResponse({'tipos': list(tipos)})

@@ -166,6 +166,7 @@
 
 				<!-- DETALLES DEL EXPEDIENTE -->
 				<section id="detalles" v-show="seccionActual === 'detalles'">
+					{% verbatim %}
 					<div class="container">
 						<header>
 							<a href="#" @click.prevent="seccionActual = 'buscar'"><i class="fas fa-arrow-left"></i> Volver</a>
@@ -173,7 +174,7 @@
 						</header>
 
 						<div class="row">
-							<!-- Columna Izquierda: Switch Alfresco y Datos Generales -->
+							<!-- Columna Izquierda: Alfresco y Movimientos -->
 							<div class="col-4 col-12-mobile">
 								<div class="form-container" style="padding: 1.5em;">
 									<h3>Estado Digital</h3>
@@ -182,17 +183,11 @@
 											<input type="checkbox" v-model="expediente.subido_alfresco">
 											<span class="slider"></span>
 										</label>
-
-										{% verbatim %}
-										<!-- BOTON TIPO SWITCH PARA SELECCIONAR SI ESTA EN ALFRESCO O NO -->
 										<span>{{ expediente.subido_alfresco ? 'Subido a Alfresco' : 'No subido' }}</span>
-										{% endverbatim %}
 									</div>
-									<!-- BOTON para confirmar el cambio de si esta o no en alfresco -->
-									<button class="button small fit" @click="guardarCambioAlfresco">Confirmar cambio Alfresco</button>
+									<button class="button small fit" @click="$root.guardarCambioAlfresco">Confirmar cambio Alfresco</button>
 								</div>
 
-								<!-- Historial visual dentro de detalles -->
 								<div class="timeline" style="margin-top: 2em;">
 									<h3 style="font-size: 0.9em;">Historial de Movimientos</h3>
 									<div v-for="m in expediente.movimientos" class="timeline-item" style="font-size: 0.7em;">
@@ -205,41 +200,89 @@
 								</div>
 							</div>
 
-							<!-- Columna Derecha: Vincular Personas -->
+							<!-- Columna Derecha: Formulario de Vinculación -->
 							<div class="col-8 col-12-mobile">
 								<div class="form-container">
-									<h3>Vincular Personas</h3>
-									<div class="row gtr-25">
-										<div class="col-6"><input type="text" placeholder="Nombre" v-model="nuevaPersona.nombre"></div>
-										<div class="col-6"><input type="text" placeholder="Apellido" v-model="nuevaPersona.apellido"></div>
-										<div class="col-4"><input type="text" placeholder="Documento" v-model="nuevaPersona.doc"></div>
-										<div class="col-4">
-											<select v-model="nuevaPersona.nacionalidad">
-												<option value="Uruguaya">Uruguaya</option>
-												<option value="Argentina">Argentina</option>
-												<option value="Brasilera">Brasilera</option>
+									<h3>Vincular Nueva Persona</h3>
+									<div class="row gtr-uniform">
+										<div class="col-6 col-12-mobile">
+											<label>Primer Nombre</label>
+											<input type="text" v-model="nuevaPersona.primer_nombre">
+										</div>
+										<div class="col-6 col-12-mobile">
+											<label>Segundo Nombre</label>
+											<input type="text" v-model="nuevaPersona.segundo_nombre">
+										</div>
+										<div class="col-6 col-12-mobile">
+											<label>Primer Apellido</label>
+											<input type="text" v-model="nuevaPersona.primer_apellido">
+										</div>
+										<div class="col-6 col-12-mobile">
+											<label>Segundo Apellido</label>
+											<input type="text" v-model="nuevaPersona.segundo_apellido">
+										</div>
+										<div class="col-4 col-12-mobile">
+											<label>Tipo Doc.</label>
+											<select v-model="nuevaPersona.tipo_documento_id">
+												<option v-for="t in $root.tiposDocumento" :value="t.id">{{ t.nombre }}</option>
 											</select>
 										</div>
-										<div class="col-4">
-											<button class="button primary icon solid fa-plus fit" @click.prevent="agregarPersona">Agregar</button>
+										<div class="col-8 col-12-mobile">
+											<label>Documento</label>
+											<input type="text" v-model="nuevaPersona.documento">
+										</div>
+										<div class="col-6 col-12-mobile">
+											<label>Nacionalidad</label>
+											<input list="lista-paises-det" v-model="nuevaPersona.nacionalidad_nombre" placeholder="Buscar país...">
+											<datalist id="lista-paises-det">
+												<option v-for="p in $root.paises" :value="p.nombre"></option>
+											</datalist>
+										</div>
+										<div class="col-6 col-12-mobile">
+											<label>Rol</label>
+											<select v-model="nuevaPersona.rol">
+												<option value="imputado">Imputado</option>
+												<option value="victima">Víctima</option>
+												<option value="denunciante">Denunciante</option>
+												<option value="testigo">Testigo</option>
+											</select>
+										</div>
+										<div class="col-12">
+											<button class="button primary fit icon solid fa-user-plus" @click.prevent="$root.agregarPersona">Vincular al Listado</button>
 										</div>
 									</div>
+								</div>
+							</div>
+						</div>
 
-									<table class="people-table" v-if="personasVinculadas.length > 0">
+						<!-- TABLA DE PERSONAS VINCULADAS (Abajo del todo, ancho completo) -->
+						<div class="row" style="margin-top: 3em;">
+							<div class="col-12">
+								<header><h3>Personas Vinculadas a este Expediente</h3></header>
+								<div class="results-table-container">
+									<table class="results-table">
 										<thead>
 											<tr>
 												<th>Nombre Completo</th>
 												<th>Documento</th>
 												<th>Nacionalidad</th>
-												<th></th>
+												<th>Rol</th>
+												<th>Acciones</th>
 											</tr>
 										</thead>
 										<tbody>
 											<tr v-for="(p, index) in personasVinculadas" :key="index">
-												<td>{{ p.nombre }} {{ p.apellido }}</td>
-												<td>{{ p.doc }}</td>
-												<td>{{ p.nacionalidad }}</td>
-												<td><button class="btn-remove" @click="personasVinculadas.splice(index, 1)"><i class="fas fa-trash"></i></button></td>
+												<td class="uppercase" style="font-weight: 600; color: #5983b0;">
+													{{ p.primer_nombre }} {{ p.segundo_nombre }} {{ p.primer_apellido }} {{ p.segundo_apellido }}
+												</td>
+												<td>{{ p.documento }}</td>
+												<td class="uppercase">{{ p.nacionalidad_nombre }}</td>
+												<td><span class="badge" style="font-size: 0.8em;">{{ p.rol }}</span></td>
+												<td>
+													<button class="btn-remove" @click="personasVinculadas.splice(index, 1)">
+														<i class="fas fa-trash"></i> Quitar
+													</button>
+												</td>
 											</tr>
 										</tbody>
 									</table>
@@ -247,6 +290,7 @@
 							</div>
 						</div>
 					</div>
+					{% endverbatim %}
 				</section>
 
 				<!-- Contacto -->

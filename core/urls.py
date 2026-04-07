@@ -17,4 +17,6 @@ urlpatterns = [
     path('api/expediente/<int:id>/alfresco/', views.actualizar_alfresco, name='api_alfresco'),
     path('api/expediente/crear/', views.crear_expediente, name='api_crear'),
     path('api/oficinas/', views.lista_oficinas, name='api_oficinas'),
+    path('api/paises/', views.lista_paises, name='api_paises'),
+    path('api/tipos-documento/', views.lista_tipos_documento, name='api_tipos_documento'),  
 ]

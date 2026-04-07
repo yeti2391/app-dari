@@ -66,14 +66,17 @@
 								observaciones: ''
 							},
 
-							// ESTO FALTABA: Datos para vincular personas
-							nuevaPersona: { 
-								nombre: '', 
-								apellido: '', 
-								doc: '', 
-								nacionalidad: 'Uruguaya' 
+							paises: [],
+							tiposDocumento: [],
+							nuevaPersona: {
+								primer_nombre: '', segundo_nombre: '',
+								primer_apellido: '', segundo_apellido: '',
+								tipo_documento_id: '', documento: '',
+								nacionalidad_id: '', nacionalidad_nombre: '', // para el filtro
+								rol: 'imputado'
 							},
-							personasVinculadas: [] // Lista temporal de la tabla
+							personasVinculadas: [],
+							cargando: false
 						}
 					},
 					computed: {
@@ -90,6 +93,8 @@
 					
 					mounted() {
 						this.cargarOficinas();
+						this.cargarPaises();
+						this.cargarTiposDocumento();
 					},
 
 					methods: {
@@ -113,6 +118,17 @@
 								} finally {
 									this.cargando = false;
 								}
+						},
+						
+						async cargarPaises() {
+							const res = await fetch('/api/paises/');
+							const data = await res.json();
+							this.paises = data.paises;
+						},
+						async cargarTiposDocumento() {
+							const res = await fetch('/api/tipos-documento/');
+							const data = await res.json();
+							this.tiposDocumento = data.tipos;
 						},
 
 						async verDetalles(id) {
@@ -164,16 +180,29 @@
 							}
 						},
 
-						// ESTO FALTABA: Método para el botón de agregar persona
+						// Método para el botón de agregar persona
 						agregarPersona() {
-							if(this.nuevaPersona.nombre && this.nuevaPersona.doc) {
-								// Agregamos a la lista visual
-								this.personasVinculadas.push({...this.nuevaPersona});
-								// Limpiamos el formulario
-								this.nuevaPersona = { nombre: '', apellido: '', doc: '', nacionalidad: 'Uruguaya' };
-							} else {
-								alert("Complete al menos Nombre y Documento");
-							}
+							// Buscamos el ID del país basado en el nombre seleccionado en el datalist
+							const paisEncontrado = this.paises.find(p => p.nombre === this.nuevaPersona.nacionalidad_nombre);
+							if(this.nuevaPersona.primer_nombre && this.nuevaPersona.documento && paisEncontrado) {
+							// Creamos un objeto limpio con los mismos campos que envía el Backend
+							const personaFinal = {
+								primer_nombre: this.nuevaPersona.primer_nombre,
+								segundo_nombre: this.nuevaPersona.segundo_nombre,
+								primer_apellido: this.nuevaPersona.primer_apellido,
+								segundo_apellido: this.nuevaPersona.segundo_apellido,
+								documento: this.nuevaPersona.documento,
+								nacionalidad_nombre: this.nuevaPersona.nacionalidad_nombre,
+								rol: this.nuevaPersona.rol.charAt(0).toUpperCase() + this.nuevaPersona.rol.slice(1) // Capitalizar
+							};
+
+							this.personasVinculadas.push(personaFinal);
+							
+							// Reset del formulario
+							this.nuevaPersona = { primer_nombre: '', segundo_nombre: '', primer_apellido: '', segundo_apellido: '', tipo_documento_id: '', documento: '', nacionalidad_nombre: '', rol: 'imputado' };
+						} else {
+							alert("Verifique: Primer Nombre, Documento y que la Nacionalidad sea válida.");
+						}
 						}
 					}
 				}).mount('#app')
