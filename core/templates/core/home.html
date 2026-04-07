@@ -261,18 +261,6 @@
 				</section>
 
 				<!-- Contacto -->
-					<section id="contacto" v-show="seccionActual === 'contacto'">
-						<div class="container">
-							<header><h2>Contacto</h2></header>
-							<form method="post" action="#">
-								<div class="row">
-									<div class="col-6 col-12-mobile"><label>Nombre:</label><input type="text" value="Jane Doe" readonly /></div>
-									<div class="col-6 col-12-mobile"><label>Email:</label><input type="email" value="jane.doe@minterior.gub.uy" readonly /></div>
-									<div class="col-12"><textarea name="message" placeholder="Mensaje"></textarea></div>
-									<div class="col-12"><input type="submit" value="Enviar" /></div>
-								</div>
-							</form>
-						</div>
-					</section>
-			</div> <!-- CIERRE CORRECTO DEL MAIN -->
+				{% include "core/snippets_home/contacto.html" %}
+			</div> <!-- CIERRE CORRECTO DEL MAIN --> 
 {% endblock %}
