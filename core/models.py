@@ -78,9 +78,14 @@ class TipoMovimiento(models.Model):
 
 class ExpedienteMovimiento(models.Model):
     expediente = models.ForeignKey(Expediente, on_delete=models.CASCADE)
-    tipo_movimiento = models.ForeignKey(TipoMovimiento, on_delete=models.PROTECT)
-    fecha = models.DateTimeField()
+    # Registramos de qué oficina sale y a cuál entra
+    origen = models.ForeignKey(Oficina, on_delete=models.PROTECT, related_name='movimientos_origen')
+    destino = models.ForeignKey(Oficina, on_delete=models.PROTECT, related_name='movimientos_destino')
+    
+    fecha = models.DateTimeField() # Fecha y hora manual del traspaso real
+    entregado_por = models.CharField(max_length=150)
+    recibido_por = models.CharField(max_length=150)
     observaciones = models.TextField(blank=True, null=True)
 
     def __str__(self):
-        return f"{self.expediente} - {self.tipo_movimiento}"
+        return f"{self.expediente}: {self.origen} -> {self.destino}"

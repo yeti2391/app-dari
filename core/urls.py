@@ -20,4 +20,9 @@ urlpatterns = [
     path('api/paises/', views.lista_paises, name='api_paises'),
     path('api/tipos-documento/', views.lista_tipos_documento, name='api_tipos_documento'),  
     path('api/recientes/', views.expedientes_recientes, name='api_recientes'),
+
+     # NUEVAS RUTAS DE MOVIMIENTOS
+    path('api/movimientos/tipos/', views.lista_tipos_movimiento, name='api_mov_tipos'),
+    path('api/movimientos/registrar/', views.registrar_movimiento, name='api_mov_registrar'),
+    path('api/movimientos/historial/', views.historial_movimientos, name='api_mov_historial'),
 ]

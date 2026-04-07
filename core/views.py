@@ -1,24 +1,21 @@
 from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.db.models import Q
+from django.db.models import Q, F, Value
 from django.db.models.functions import Concat
-from django.db.models import Value
 import json
 from .models import *
 
-# 1. Vista para renderizar la página principal
+# 1. Vista principal
 def home(request):
     return render(request, 'core/home.html')
 
-# 2. Buscar Expedientes (Devuelve JSON)
+# 2. Buscar (Universal)
 def buscar_expedientes(request):
     query = request.GET.get('q', '').strip()
     if not query:
         return JsonResponse({'resultados': []})
 
-    # Iniciamos desde Expediente para asegurar que aparezcan los que no tienen personas
-    # Usamos values para obtener los datos de la relación (Left Join automático)
     resultados_raw = Expediente.objects.filter(
         Q(codigo__icontains=query) | 
         Q(observaciones__icontains=query) |
@@ -26,15 +23,11 @@ def buscar_expedientes(request):
         Q(expedientepersona__persona__primer_apellido__icontains=query) |
         Q(expedientepersona__persona__documento__icontains=query)
     ).annotate(
-        # Traemos los datos de la persona vinculada (si existen)
-        p_id=models.F('expedientepersona__persona__id'),
-        p_nom=Concat(
-            'expedientepersona__persona__primer_nombre', Value(' '), 
-            'expedientepersona__persona__primer_apellido'
-        ),
-        p_doc=models.F('expedientepersona__persona__documento'),
-        p_pais=models.F('expedientepersona__persona__nacionalidad__codigo'), # <--- CÓDIGO DE PAÍS
-        p_rol=models.F('expedientepersona__rol')
+        p_id=F('expedientepersona__persona__id'),
+        p_nom=Concat('expedientepersona__persona__primer_nombre', Value(' '), 'expedientepersona__persona__primer_apellido'),
+        p_doc=F('expedientepersona__persona__documento'),
+        p_pais=F('expedientepersona__persona__nacionalidad__codigo'),
+        p_rol=F('expedientepersona__rol')
     ).values(
         'id', 'codigo', 'oficina__nombre', 'fecha_ingreso',
         'p_id', 'p_nom', 'p_doc', 'p_pais', 'p_rol'
@@ -47,17 +40,15 @@ def buscar_expedientes(request):
             'expediente_codigo': r['codigo'],
             'oficina': r['oficina__nombre'],
             'fecha_ingreso': r['fecha_ingreso'].strftime("%d/%m/%Y"),
-            # Si p_id es None, significa que el expediente está vacío
             'persona_id': r['p_id'] or '',
             'persona_nombre': r['p_nom'] or '--- SIN ASIGNAR ---',
             'documento': r['p_doc'] or '---',
-            'nacionalidad_cod': r['p_pais'] or '---', # Mostramos el Código (ej: URY)
+            'nacionalidad_cod': r['p_pais'] or '---',
             'rol': r['p_rol'] or 'N/A'
         })
-        
     return JsonResponse({'resultados': data})
 
-# 3. Obtener detalles completos de un expediente
+# 3. Detalles del expediente
 def detalle_expediente(request, id):
     exp = get_object_or_404(Expediente, id=id)
     
@@ -71,17 +62,17 @@ def detalle_expediente(request, id):
             'primer_apellido': vp.persona.primer_apellido,
             'segundo_apellido': vp.persona.segundo_apellido or '',
             'documento': vp.persona.documento,
-            'nacionalidad_nombre': vp.persona.nacionalidad.nombre, # Nombre del país
-            'rol': vp.get_rol_display() # Texto legible: "Indagado", "Víctima", etc.
+            'nacionalidad_nombre': vp.persona.nacionalidad.nombre,
+            'rol': vp.get_rol_display()
         })
 
-    # Movimientos del expediente
-    movimientos = ExpedienteMovimiento.objects.filter(expediente=exp).order_by('-fecha')
+    # Movimientos para el Timeline de detalles
+    movs = ExpedienteMovimiento.objects.filter(expediente=exp).select_related('origen', 'destino').order_by('-fecha')
     lista_movs = []
-    for m in movimientos:
+    for m in movs:
         lista_movs.append({
             'fecha': m.fecha.strftime("%d/%m/%Y %H:%M"),
-            'tipo': m.tipo_movimiento.nombre,
+            'tipo': f"{m.origen.nombre} -> {m.destino.nombre}", # Resumen para el timeline
             'obs': m.observaciones
         })
 
@@ -94,8 +85,47 @@ def detalle_expediente(request, id):
         'movimientos': lista_movs
     })
 
-# 4. Actualizar estado Alfresco (POST)
-@csrf_exempt # Solo si no manejas el token CSRF en Vue todavía
+# --- VISTAS DE MOVIMIENTOS (EXTERNAS) ---
+
+def lista_tipos_movimiento(request):
+    tipos = TipoMovimiento.objects.all().values('id', 'nombre')
+    return JsonResponse({'tipos': list(tipos)})
+
+@csrf_exempt
+def registrar_movimiento(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        exp = get_object_or_404(Expediente, codigo=data['codigo_expediente'])
+        mov = ExpedienteMovimiento.objects.create(
+            expediente=exp,
+            origen_id=data['origen_id'],
+            destino_id=data['destino_id'],
+            fecha=data['fecha'],
+            entregado_por=data['entregado_por'],
+            recibido_por=data['recibido_por'],
+            observaciones=data.get('observaciones')
+        )
+        return JsonResponse({'status': 'ok'})
+    return JsonResponse({'status': 'error'}, status=400)
+
+def historial_movimientos(request):
+    codigo = request.GET.get('codigo')
+    movs = ExpedienteMovimiento.objects.filter(expediente__codigo=codigo).select_related('origen', 'destino').order_by('-fecha')
+    data = []
+    for m in movs:
+        data.append({
+            'fecha': m.fecha.strftime("%d/%m/%Y %H:%M"),
+            'origen': m.origen.nombre,
+            'destino': m.destino.nombre,
+            'entrega': m.entregado_por,
+            'recibe': m.recibido_por,
+            'obs': m.observaciones
+        })
+    return JsonResponse({'historial': data})
+
+# --- OTRAS VISTAS ---
+
+@csrf_exempt
 def actualizar_alfresco(request, id):
     if request.method == 'POST':
         exp = get_object_or_404(Expediente, id=id)
@@ -104,7 +134,6 @@ def actualizar_alfresco(request, id):
         exp.save()
         return JsonResponse({'status': 'ok'})
 
-# 5. Crear Expediente (POST)
 @csrf_exempt
 def crear_expediente(request):
     if request.method == 'POST':
@@ -115,13 +144,10 @@ def crear_expediente(request):
             fecha_ingreso=data['fecha'],
             oficina=oficina,
             observaciones=data.get('observaciones', ''),
-            created_by=request.user if request.user.is_authenticated else None
         )
         return JsonResponse({'status': 'ok', 'id': nuevo_exp.id})
-    
-# 5.1. Función para recuperar los últimos 10 registros de expedientes
+
 def expedientes_recientes(request):
-    # Obtenemos los últimos 10 expedientes creados
     recientes = Expediente.objects.all().order_by('-id')[:10]
     data = []
     for exp in recientes:
@@ -129,22 +155,18 @@ def expedientes_recientes(request):
             'id': exp.id,
             'codigo': exp.codigo,
             'fecha_ingreso': exp.fecha_ingreso.strftime("%d/%m/%Y"),
-            # Truncamos las observaciones para que no rompan la tabla si son muy largas
             'observaciones': (exp.observaciones[:75] + '...') if exp.observaciones and len(exp.observaciones) > 75 else (exp.observaciones or '')
         })
     return JsonResponse({'recientes': data})
-    
-# 6. Oficinas
+
 def lista_oficinas(request):
     oficinas = Oficina.objects.all().values('id', 'nombre')
     return JsonResponse({'oficinas': list(oficinas)})
 
-#7 Países
 def lista_paises(request):
     paises = Pais.objects.all().order_by('nombre').values('id', 'nombre')
     return JsonResponse({'paises': list(paises)})
 
-# Tipo de documento (si es cedula pasaporte o que)
 def lista_tipos_documento(request):
     tipos = TipoDocumento.objects.all().values('id', 'nombre')
     return JsonResponse({'tipos': list(tipos)})

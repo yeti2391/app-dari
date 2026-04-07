@@ -81,27 +81,89 @@
 					</section>
 
 				<!-- Movimientos de expedientes -->
-					<section id="movimientos" v-show="seccionActual === 'movimientos'">
-						<div class="container">
-							<header><h2>Movimientos de expedientes</h2></header>
-							<div class="form-container">
-								<div class="row gtr-50">
-									<div class="col-9"><input type="text" placeholder="Ingrese código del expediente..."></div>
-									<div class="col-3"><button class="button fit">Consultar</button></div>
-								</div>
-							</div>
-							<div class="timeline">
-								<div class="timeline-item">
-									<div class="timeline-dot"></div>
-									<div class="timeline-content">
-										<span class="timeline-date">20 Mar 2024</span>
-										<h4>Oficina Administrativa</h4>
-										<p>Recibido por: Juan Pérez</p>
+				<section id="movimientos" v-show="seccionActual === 'movimientos'">
+					<div class="container">
+						<header><h2>Traspaso de Expedientes</h2></header>
+
+						<div class="form-container">
+							<form @submit.prevent="guardarMovimiento">
+								<div class="row gtr-uniform">
+									<div class="col-4 col-12-mobile">
+										<label>Expediente (Código)</label>
+										<input type="text" v-model="nuevoMovimiento.codigo_expediente" placeholder="Ej: BJ91">
+									</div>
+									<div class="col-4 col-12-mobile">
+										<label>Fecha y Hora del Traspaso</label>
+										<input type="datetime-local" v-model="nuevoMovimiento.fecha">
+									</div>
+									<div class="col-4 col-12-mobile" style="display: flex; align-items: flex-end;">
+										<button type="button" class="button alt small fit" @click="buscarHistorial">Ver Historial Actual</button>
+									</div>
+
+									<!-- Flujo de Oficinas -->
+									<div class="col-6 col-12-mobile">
+										<label><i class="fas fa-sign-out-alt"></i> Oficina de Origen (Sale de:)</label>
+										<select v-model="nuevoMovimiento.origen_id">
+											<option v-for="o in oficinas" :value="o.id">{% verbatim %}{{ o.nombre }}{% endverbatim %}</option>
+										</select>
+									</div>
+									<div class="col-6 col-12-mobile">
+										<label><i class="fas fa-sign-in-alt"></i> Oficina de Destino (Hacia:)</label>
+										<select v-model="nuevoMovimiento.destino_id">
+											<option v-for="o in oficinas" :value="o.id">{% verbatim %}{{ o.nombre }}{% endverbatim %}</option>
+										</select>
+									</div>
+
+									<!-- Responsables -->
+									<div class="col-6 col-12-mobile">
+										<label>Entregado por (Nombre completo)</label>
+										<input type="text" v-model="nuevoMovimiento.entregado_por">
+									</div>
+									<div class="col-6 col-12-mobile">
+										<label>Recibido por (Nombre completo)</label>
+										<input type="text" v-model="nuevoMovimiento.recibido_por">
+									</div>
+
+									<div class="col-12">
+										<label>Detalles del Traspaso (Folios, Tomos, Notas adicionales)</label>
+										<textarea v-model="nuevoMovimiento.observaciones" rows="3"></textarea>
+									</div>
+									
+									<div class="col-12">
+										<button type="submit" class="button primary fit">Registrar Traspaso</button>
 									</div>
 								</div>
+							</form>
+						</div>
+
+						<!-- HISTORIAL VISUAL -->
+						<div style="margin-top: 4em;" v-if="historialBusqueda.length > 0">
+							<header><h3>Ruta de Traslados - Expediente {% verbatim %}{{ nuevoMovimiento.codigo_expediente }}{% endverbatim %}</h3></header>
+							<div class="timeline">
+								{% verbatim %}
+								<div class="timeline-item" v-for="h in historialBusqueda">
+									<div class="timeline-dot"></div>
+									<div class="timeline-content" style="border-left: 4px solid #5983b0;">
+										<span class="timeline-date">{{ h.fecha }}</span>
+										<div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+											<span class="badge" style="background: #eef4fa; color: #273C53;">{{ h.origen }}</span>
+											<i class="fas fa-long-arrow-alt-right"></i>
+											<span class="badge" style="background: #273C53; color: white;">{{ h.destino }}</span>
+										</div>
+										<p style="font-size: 0.85em; margin: 0;">
+											<strong>Remite:</strong> {{ h.entrega }} <br>
+											<strong>Recibe:</strong> {{ h.recibe }}
+										</p>
+										<div v-if="h.obs" style="margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 5px; font-size: 0.8em; font-style: italic;">
+											{{ h.obs }}
+										</div>
+									</div>
+								</div>
+								{% endverbatim %}
 							</div>
 						</div>
-					</section>
+					</div>
+				</section>
 
 				<!-- Para crear expedientes -->
 				<section id="crear" v-show="seccionActual === 'crear'">

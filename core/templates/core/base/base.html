@@ -77,7 +77,21 @@
 								rol: 'imputado'
 							},
 							personasVinculadas: [],
-							cargando: false
+							cargando: false,
+
+							//para movimientos de expedientes:
+							// En data()
+							nuevoMovimiento: {
+								codigo_expediente: '', 
+								origen_id: '', 
+								destino_id: '', 
+								fecha: '', 
+								entregado_por: '', 
+								recibido_por: '', 
+								observaciones: ''
+							},
+							historialBusqueda: [],
+							tiposMovimiento: [],
 						}
 					},
 					computed: {
@@ -97,6 +111,8 @@
 						this.cargarPaises();
 						this.cargarTiposDocumento();
 						this.cargarRecientes();
+						this.cargarTiposMovimiento();
+
 					},
 
 					methods: {
@@ -234,7 +250,29 @@
 						} else {
 							alert("Verifique: Primer Nombre, Documento y que la Nacionalidad sea válida.");
 						}
+						},
+						async cargarTiposMovimiento() {
+							const res = await fetch('/api/movimientos/tipos/');
+							const data = await res.json();
+							this.tiposMovimiento = data.tipos;
+						},
+						async buscarHistorial() {
+							const res = await fetch(`/api/movimientos/historial/?codigo=${this.nuevoMovimiento.codigo_expediente}`);
+							const data = await response.json();
+							this.historialBusqueda = data.historial;
+						},
+						async guardarMovimiento() {
+							const res = await fetch('/api/movimientos/registrar/', {
+								method: 'POST',
+								headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+								body: JSON.stringify(this.nuevoMovimiento)
+							});
+							if(res.ok) {
+								alert("Movimiento registrado");
+								this.buscarHistorial(); // Actualizar timeline
+							}
 						}
+
 					}
 				}).mount('#app')
 		</script>
