@@ -19,4 +19,5 @@ urlpatterns = [
     path('api/oficinas/', views.lista_oficinas, name='api_oficinas'),
     path('api/paises/', views.lista_paises, name='api_paises'),
     path('api/tipos-documento/', views.lista_tipos_documento, name='api_tipos_documento'),  
+    path('api/recientes/', views.expedientes_recientes, name='api_recientes'),
 ]

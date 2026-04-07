@@ -119,6 +119,21 @@ def crear_expediente(request):
         )
         return JsonResponse({'status': 'ok', 'id': nuevo_exp.id})
     
+# 5.1. Función para recuperar los últimos 10 registros de expedientes
+def expedientes_recientes(request):
+    # Obtenemos los últimos 10 expedientes creados
+    recientes = Expediente.objects.all().order_by('-id')[:10]
+    data = []
+    for exp in recientes:
+        data.append({
+            'id': exp.id,
+            'codigo': exp.codigo,
+            'fecha_ingreso': exp.fecha_ingreso.strftime("%d/%m/%Y"),
+            # Truncamos las observaciones para que no rompan la tabla si son muy largas
+            'observaciones': (exp.observaciones[:75] + '...') if exp.observaciones and len(exp.observaciones) > 75 else (exp.observaciones or '')
+        })
+    return JsonResponse({'recientes': data})
+    
 # 6. Oficinas
 def lista_oficinas(request):
     oficinas = Oficina.objects.all().values('id', 'nombre')

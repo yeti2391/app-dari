@@ -65,6 +65,7 @@
 								fecha: new Date().toISOString().split('T')[0],
 								observaciones: ''
 							},
+							expedientesRecientes: [],
 
 							paises: [],
 							tiposDocumento: [],
@@ -95,6 +96,7 @@
 						this.cargarOficinas();
 						this.cargarPaises();
 						this.cargarTiposDocumento();
+						this.cargarRecientes();
 					},
 
 					methods: {
@@ -160,6 +162,12 @@
 							}
 						},
 
+						async cargarRecientes() {
+							const res = await fetch('/api/recientes/');
+							const data = await res.json();
+							this.expedientesRecientes = data.recientes;
+						},
+
 						async guardarNuevoExpediente() {
 							try {
 								const response = await fetch('/api/expediente/crear/', {
@@ -170,13 +178,36 @@
 									},
 									body: JSON.stringify(this.nuevoExpediente)
 								});
+
 								if (response.ok) {
-									alert("Expediente creado con éxito");
-									this.seccionActual = 'buscar';
+									// 1. Obtenemos la respuesta del servidor (que trae el ID)
+									const data = await response.json();
+
+									// 2. Mostramos el mensaje de éxito
+									alert("Expediente creado con éxito. Redirigiendo a detalles...");
+
+									// 3. Limpiamos el formulario para la próxima vez
+									this.nuevoExpediente = { 
+										codigo: '', 
+										oficina_id: '', 
+										fecha: new Date().toISOString().split('T')[0], 
+										observaciones: '' 
+									};
+									// IMPORTANTE: Recargamos la lista de recientes antes de saltar a detalles
+									this.cargarRecientes(); 
+									
 									this.nuevoExpediente = { codigo: '', oficina_id: '', fecha: new Date().toISOString().split('T')[0], observaciones: '' };
+
+									// 4. Llamamos a nuestra función verDetalles usando el ID que nos dio Django
+									// Esto automáticamente cargará los datos y cambiará la sección a 'detalles'
+									this.verDetalles(data.id);
+									
+								} else {
+									alert("Error en el servidor al intentar crear el expediente.");
 								}
 							} catch (error) {
-								alert("Error al crear expediente");
+								console.error("Error en la petición:", error);
+								alert("No se pudo conectar con el servidor.");
 							}
 						},
 

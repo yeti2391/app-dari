@@ -75,9 +75,7 @@
 								<p style="text-align: right; font-size: 0.7em; margin-top: 10px;">
 									Total de registros encontrados: {{ resultados.length }}
 								</p>
-							</div> <!-- Aquí se cierra el v-if de resultados -->
-                            
-							<!-- EL ERROR ESTABA AQUÍ: Había un </div> extra que cerraba el #main -->
+							</div> <!-- Aquí se cierra el v-if de resultados -->						
 							<p v-else-if="!cargando && queryBusqueda" style="margin-top: 2em;">No se encontraron resultados.</p>
 						</div> <!-- Cierre del container -->
 					</section>
@@ -109,27 +107,71 @@
 				<section id="crear" v-show="seccionActual === 'crear'">
 					<div class="container">
 						<header><h2>Crear Expediente</h2></header>
+						
+						<!-- Box del Formulario -->
 						<div class="form-container">
 							<form @submit.prevent="guardarNuevoExpediente">
 								<div class="row gtr-uniform">
 									<div class="col-6 col-12-mobile">
 										<label>Código Interno</label>
-										<input type="text" v-model="nuevoExpediente.codigo" required>
+										<input type="text" v-model="nuevoExpediente.codigo" required placeholder="Ej: EXP-100/24">
 									</div>
 									<div class="col-6 col-12-mobile">
 										<label>Oficina Solicitante</label>
 										<select v-model="nuevoExpediente.oficina_id" required>
-											<option value="">Seleccione...</option>
-											<option v-for="oficina in oficinas" :key="oficina.id" :value="oficina.id">{{ oficina.nombre }}</option>
+											<option value="">Seleccione una oficina...</option>
+											<option v-for="oficina in oficinas" :key="oficina.id" :value="oficina.id">
+												{% verbatim %}{{ oficina.nombre }}{% endverbatim %}
+											</option>
 										</select>
 									</div>
 									<div class="col-12">
-										<label>Observaciones</label>
+										<label>Observaciones Iniciales</label>
 										<textarea v-model="nuevoExpediente.observaciones"></textarea>
 									</div>
-									<div class="col-12"><input type="submit" value="Crear" class="button primary fit"></div>
+									<div class="col-12">
+										<input type="submit" value="Crear Expediente" class="button primary fit">
+									</div>
 								</div>
 							</form>
+						</div>
+
+						<!-- NUEVA TABLA DE EXPEDIENTES RECIENTES -->
+						<div style="margin-top: 3em;">
+							<header>
+								<h3 style="font-size: 1.2em; color: #5983b0;">
+									<i class="fas fa-clock"></i> Expedientes Creados Recientemente
+								</h3>
+							</header>
+							
+							<div class="results-table-container">
+								<table class="results-table">
+									<thead>
+										<tr>
+											<th style="width: 15%;">Expediente</th>
+											<th style="width: 50%;">Observaciones</th>
+											<th style="width: 15%;">F. Ingreso</th>
+											<th style="width: 10%;">Acción</th>
+										</tr>
+									</thead>
+									{% verbatim %}
+									<tbody>
+										<tr v-for="rec in expedientesRecientes" :key="rec.id">
+											<td class="uppercase" style="font-weight: bold;">{{ rec.codigo }}</td>
+											<td style="font-size: 0.85em; color: #666; font-style: italic;">
+												{{ rec.observaciones }}
+											</td>
+											<td>{{ rec.fecha_ingreso }}</td>
+											<td>
+												<button @click="$root.verDetalles(rec.id)" class="button small" style="padding: 0 10px; height: 30px; line-height: 30px;">
+													<i class="fas fa-eye"></i> Ver
+												</button>
+											</td>
+										</tr>
+									</tbody>
+									{% endverbatim %}
+								</table>
+							</div>
 						</div>
 					</div>
 				</section>
