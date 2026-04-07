@@ -12,38 +12,47 @@ def home(request):
     return render(request, 'core/home.html')
 
 # 2. Buscar Expedientes (Devuelve JSON)
-from django.db.models.functions import Concat
-from django.db.models import Value
-
 def buscar_expedientes(request):
     query = request.GET.get('q', '').strip()
-    
     if not query:
         return JsonResponse({'resultados': []})
 
-    # Buscamos en la tabla intermedia ExpedientePersona
-    # Esto nos permite devolver una fila por cada persona en cada expediente
-    vinculos = ExpedientePersona.objects.select_related('persona', 'expediente', 'expediente__oficina', 'persona__nacionalidad').annotate(
-        nombre_completo=Concat(
-            'persona__primer_nombre', Value(' '), 'persona__primer_apellido'
-        )
-    ).filter(
-        Q(expediente__codigo__icontains=query) | 
-        Q(persona__documento__icontains=query) |
-        Q(nombre_completo__icontains=query)
+    # Iniciamos desde Expediente para asegurar que aparezcan los que no tienen personas
+    # Usamos values para obtener los datos de la relación (Left Join automático)
+    resultados_raw = Expediente.objects.filter(
+        Q(codigo__icontains=query) | 
+        Q(observaciones__icontains=query) |
+        Q(expedientepersona__persona__primer_nombre__icontains=query) |
+        Q(expedientepersona__persona__primer_apellido__icontains=query) |
+        Q(expedientepersona__persona__documento__icontains=query)
+    ).annotate(
+        # Traemos los datos de la persona vinculada (si existen)
+        p_id=models.F('expedientepersona__persona__id'),
+        p_nom=Concat(
+            'expedientepersona__persona__primer_nombre', Value(' '), 
+            'expedientepersona__persona__primer_apellido'
+        ),
+        p_doc=models.F('expedientepersona__persona__documento'),
+        p_pais=models.F('expedientepersona__persona__nacionalidad__codigo'), # <--- CÓDIGO DE PAÍS
+        p_rol=models.F('expedientepersona__rol')
+    ).values(
+        'id', 'codigo', 'oficina__nombre', 'fecha_ingreso',
+        'p_id', 'p_nom', 'p_doc', 'p_pais', 'p_rol'
     ).distinct()
-    
+
     data = []
-    for v in vinculos:
+    for r in resultados_raw:
         data.append({
-            'persona_id': v.persona.id,
-            'persona_nombre': f"{v.persona.primer_nombre} {v.persona.primer_apellido}",
-            'documento': v.persona.documento,
-            'nacionalidad': v.persona.nacionalidad.nombre,
-            'rol': v.get_rol_display(), # 'Imputado', 'Víctima', etc.
-            'expediente_id': v.expediente.id,
-            'expediente_codigo': v.expediente.codigo,
-            'oficina': v.expediente.oficina.nombre,
+            'expediente_id': r['id'],
+            'expediente_codigo': r['codigo'],
+            'oficina': r['oficina__nombre'],
+            'fecha_ingreso': r['fecha_ingreso'].strftime("%d/%m/%Y"),
+            # Si p_id es None, significa que el expediente está vacío
+            'persona_id': r['p_id'] or '',
+            'persona_nombre': r['p_nom'] or '--- SIN ASIGNAR ---',
+            'documento': r['p_doc'] or '---',
+            'nacionalidad_cod': r['p_pais'] or '---', # Mostramos el Código (ej: URY)
+            'rol': r['p_rol'] or 'N/A'
         })
         
     return JsonResponse({'resultados': data})
