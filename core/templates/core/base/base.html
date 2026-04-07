@@ -228,29 +228,49 @@
 						},
 
 						// Método para el botón de agregar persona
-						agregarPersona() {
-							// Buscamos el ID del país basado en el nombre seleccionado en el datalist
-							const paisEncontrado = this.paises.find(p => p.nombre === this.nuevaPersona.nacionalidad_nombre);
-							if(this.nuevaPersona.primer_nombre && this.nuevaPersona.documento && paisEncontrado) {
-							// Creamos un objeto limpio con los mismos campos que envía el Backend
-							const personaFinal = {
-								primer_nombre: this.nuevaPersona.primer_nombre,
-								segundo_nombre: this.nuevaPersona.segundo_nombre,
-								primer_apellido: this.nuevaPersona.primer_apellido,
-								segundo_apellido: this.nuevaPersona.segundo_apellido,
-								documento: this.nuevaPersona.documento,
-								nacionalidad_nombre: this.nuevaPersona.nacionalidad_nombre,
-								rol: this.nuevaPersona.rol.charAt(0).toUpperCase() + this.nuevaPersona.rol.slice(1) // Capitalizar
-							};
-
-							this.personasVinculadas.push(personaFinal);
+						async agregarPersona() {
+						// Buscamos el país
+						const paisEncontrado = this.paises.find(p => p.nombre === this.nuevaPersona.nacionalidad_nombre);
+						
+						if(this.nuevaPersona.primer_nombre && this.nuevaPersona.documento && paisEncontrado) {
 							
-							// Reset del formulario
-							this.nuevaPersona = { primer_nombre: '', segundo_nombre: '', primer_apellido: '', segundo_apellido: '', tipo_documento_id: '', documento: '', nacionalidad_nombre: '', rol: 'imputado' };
+							try {
+								// ENVIAR AL BACKEND
+								const response = await fetch(`/api/expediente/${this.expediente.id}/vincular-persona/`, {
+									method: 'POST',
+									headers: {
+										'Content-Type': 'application/json',
+										'X-CSRFToken': '{{ csrf_token }}'
+									},
+									body: JSON.stringify(this.nuevaPersona)
+								});
+
+								if (response.ok) {
+									// Si el servidor guardó con éxito, actualizamos la tabla visual
+									const personaFinal = { ...this.nuevaPersona };
+									this.personasVinculadas.push(personaFinal);
+									
+									// Limpiar formulario
+									this.nuevaPersona = { 
+										primer_nombre: '', segundo_nombre: '', 
+										primer_apellido: '', segundo_apellido: '', 
+										tipo_documento_id: '', documento: '', 
+										nacionalidad_nombre: '', rol: 'indagado' 
+									};
+									
+									alert("Persona vinculada correctamente al expediente.");
+								} else {
+									alert("Error al guardar en la base de datos.");
+								}
+							} catch (error) {
+								console.error(error);
+								alert("No se pudo conectar con el servidor.");
+							}
+
 						} else {
-							alert("Verifique: Primer Nombre, Documento y que la Nacionalidad sea válida.");
+							alert("Verifique: Primer Nombre, Documento y Nacionalidad válida.");
 						}
-						},
+					},
 						async cargarTiposMovimiento() {
 							const res = await fetch('/api/movimientos/tipos/');
 							const data = await res.json();

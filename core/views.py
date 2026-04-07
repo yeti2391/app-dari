@@ -170,3 +170,35 @@ def lista_paises(request):
 def lista_tipos_documento(request):
     tipos = TipoDocumento.objects.all().values('id', 'nombre')
     return JsonResponse({'tipos': list(tipos)})
+
+@csrf_exempt
+def vincular_persona(request, id):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        expediente = get_object_or_404(Expediente, id=id)
+        
+        # 1. Obtener o crear la Persona
+        # Usamos update_or_create para que si la persona ya existe, solo actualice sus nombres
+        pais = Pais.objects.get(nombre=data['nacionalidad_nombre'])
+        tipo_doc = TipoDocumento.objects.get(id=data['tipo_documento_id'])
+        
+        persona, created = Persona.objects.update_or_create(
+            documento=data['documento'],
+            defaults={
+                'tipo_documento': tipo_doc,
+                'primer_nombre': data['primer_nombre'],
+                'segundo_nombre': data.get('segundo_nombre', ''),
+                'primer_apellido': data['primer_apellido'],
+                'segundo_apellido': data.get('segundo_apellido', ''),
+                'nacionalidad': pais,
+            }
+        )
+
+        # 2. Crear el vínculo en ExpedientePersona
+        ExpedientePersona.objects.get_or_create(
+            expediente=expediente,
+            persona=persona,
+            defaults={'rol': data['rol'].lower()}
+        )
+
+        return JsonResponse({'status': 'ok'})

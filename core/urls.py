@@ -25,4 +25,7 @@ urlpatterns = [
     path('api/movimientos/tipos/', views.lista_tipos_movimiento, name='api_mov_tipos'),
     path('api/movimientos/registrar/', views.registrar_movimiento, name='api_mov_registrar'),
     path('api/movimientos/historial/', views.historial_movimientos, name='api_mov_historial'),
+
+    # REGISTRAR PERSONAS
+    path('api/expediente/<int:id>/vincular-persona/', views.vincular_persona, name='api_vincular_persona'),
 ]
