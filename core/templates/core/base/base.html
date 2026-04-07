@@ -46,7 +46,8 @@
 							oficinas: [], 
 							queryBusqueda: '',
 							resultados: [],
-							cargando: false,
+							paginaActual: 1,
+							resultadosPorPagina: 25,
 							
 							// Detalles del expediente seleccionado
 							expediente: {
@@ -75,9 +76,22 @@
 							personasVinculadas: [] // Lista temporal de la tabla
 						}
 					},
+					computed: {
+					// Esta función corta el array de resultados según la página
+						resultadosPaginados() {
+							let inicio = (this.paginaActual - 1) * this.resultadosPorPagina;
+							let fin = inicio + this.resultadosPorPagina;
+							return this.resultados.slice(inicio, fin);
+						},
+						totalPaginas() {
+							return Math.ceil(this.resultados.length / this.resultadosPorPagina);
+						}
+					},
+					
 					mounted() {
 						this.cargarOficinas();
 					},
+
 					methods: {
 						async cargarOficinas() {
 							try {
@@ -88,19 +102,17 @@
 						},
 
 						async buscar() {
-							// Si no hay texto, no buscamos nada
-							if (this.queryBusqueda.trim() === '') return;
-   							this.cargando = true;
-							try {
-								// Usamos encodeURIComponent para que carácteres especiales o espacios no rompan la URL
-								const response = await fetch(`/api/buscar/?q=${encodeURIComponent(this.queryBusqueda)}`);
-								const data = await response.json();
-								this.resultados = data.resultados;
-							} catch (error) {
-								console.error("Error en búsqueda:", error);
-							} finally {
-								this.cargando = false;
-							}
+								this.cargando = true;
+								this.paginaActual = 1; // Resetear a página 1 en cada búsqueda
+								try {
+									const response = await fetch(`/api/buscar/?q=${encodeURIComponent(this.queryBusqueda)}`);
+									const data = await response.json();
+									this.resultados = data.resultados;
+								} catch (error) {
+									console.error(error);
+								} finally {
+									this.cargando = false;
+								}
 						},
 
 						async verDetalles(id) {

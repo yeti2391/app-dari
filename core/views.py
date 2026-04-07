@@ -12,37 +12,38 @@ def home(request):
     return render(request, 'core/home.html')
 
 # 2. Buscar Expedientes (Devuelve JSON)
+from django.db.models.functions import Concat
+from django.db.models import Value
+
 def buscar_expedientes(request):
     query = request.GET.get('q', '').strip()
     
     if not query:
         return JsonResponse({'resultados': []})
 
-    # Usamos Concat para crear un campo virtual que una Nombre + Espacio + Apellido
-    # Esto permite buscar "Mario Ferreira" completo
-    expedientes = Expediente.objects.annotate(
+    # Buscamos en la tabla intermedia ExpedientePersona
+    # Esto nos permite devolver una fila por cada persona en cada expediente
+    vinculos = ExpedientePersona.objects.select_related('persona', 'expediente', 'expediente__oficina', 'persona__nacionalidad').annotate(
         nombre_completo=Concat(
-            'expedientepersona__persona__primer_nombre', 
-            Value(' '), 
-            'expedientepersona__persona__primer_apellido'
+            'persona__primer_nombre', Value(' '), 'persona__primer_apellido'
         )
     ).filter(
-        Q(codigo__icontains=query) | 
-        Q(observaciones__icontains=query) |
-        Q(nombre_completo__icontains=query) | # Busca en el nombre unido
-        Q(expedientepersona__persona__documento__icontains=query) |
-        Q(expedientepersona__persona__primer_nombre__icontains=query) |
-        Q(expedientepersona__persona__primer_apellido__icontains=query)
-    ).select_related('oficina').distinct()
+        Q(expediente__codigo__icontains=query) | 
+        Q(persona__documento__icontains=query) |
+        Q(nombre_completo__icontains=query)
+    ).distinct()
     
     data = []
-    for exp in expedientes:
+    for v in vinculos:
         data.append({
-            'id': exp.id,
-            'codigo': exp.codigo,
-            'oficina': exp.oficina.nombre,
-            'fecha_ingreso': exp.fecha_ingreso.strftime("%d/%m/%Y"),
-            'subido_alfresco': exp.subido_alfresco
+            'persona_id': v.persona.id,
+            'persona_nombre': f"{v.persona.primer_nombre} {v.persona.primer_apellido}",
+            'documento': v.persona.documento,
+            'nacionalidad': v.persona.nacionalidad.nombre,
+            'rol': v.get_rol_display(), # 'Imputado', 'Víctima', etc.
+            'expediente_id': v.expediente.id,
+            'expediente_codigo': v.expediente.codigo,
+            'oficina': v.expediente.oficina.nombre,
         })
         
     return JsonResponse({'resultados': data})

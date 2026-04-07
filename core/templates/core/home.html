@@ -26,14 +26,65 @@
 								</form>
 							</div>
 
-							<!-- Listado de Resultados Dinámico -->
-							<div style="margin-top: 3em;" v-if="resultados.length > 0">
-								<div v-for="res in resultados" :key="res.id" class="result-card">
-									<span class="badge">{{ res.oficina }}</span>
-									<h4>Código: {{ res.codigo }}</h4>
-									<p>Ingresado el: {{ res.fecha_ingreso }}</p>
-									<button @click="verDetalles(res.id)" class="button small">Gestionar Detalles</button>
+							<!-- Listado de Resultados Dinámico en la sección "buscar" -->
+							<div v-if="resultados.length > 0">
+								
+								<div class="results-table-container">
+									<table class="results-table">
+										<thead>
+											<tr>
+												<th>Persona (Nombre Completo)</th>
+												<th>Documento</th>
+												<th>Nacionalidad</th>
+												<th>Rol</th>
+												<th>Expediente</th>
+												<th>Oficina</th>
+												<th>Ver Exp.</th>
+											</tr>
+										</thead>
+										{% verbatim %}
+										<tbody>
+											<tr v-for="res in resultadosPaginados" :key="res.persona_id + '-' + res.expediente_id">
+												<!-- Aplicamos la clase uppercase aquí -->
+												<td class="uppercase" style="font-weight: 600; color: #5983b0;">
+													{{ res.persona_nombre }}
+												</td>
+												<td>{{ res.documento }}</td>
+												<td class="uppercase">{{ res.nacionalidad }}</td>
+												<td>
+													<span class="badge" style="font-size: 0.8em; padding: 2px 8px;">{{ res.rol }}</span>
+												</td>
+												<td class="uppercase" style="font-weight: bold;">{{ res.expediente_codigo }}</td>
+												<td>{{ res.oficina }}</td>
+												<td>
+													<button @click="$root.verDetalles(res.expediente_id)" class="button small" style="padding: 0 10px; height: 30px; line-height: 30px;">
+														<i class="fas fa-eye"></i>
+													</button>
+												</td>
+											</tr>
+										</tbody>
+										{% endverbatim %}
+									</table>
 								</div>
+
+								<!-- Controles de Paginación -->
+								<div class="pagination" v-if="totalPaginas > 1">
+									<button class="button alt small" 
+											:disabled="paginaActual === 1" 
+											@click="paginaActual--">Anterior</button>
+									
+									<span style="align-self: center; font-size: 0.8em;">
+										Página {{ paginaActual }} de {{ totalPaginas }}
+									</span>
+
+									<button class="button alt small" 
+											:disabled="paginaActual === totalPaginas" 
+											@click="paginaActual++">Siguiente</button>
+								</div>
+								
+								<p style="text-align: right; font-size: 0.7em; margin-top: 10px;">
+									Total de registros encontrados: {{ resultados.length }}
+								</p>
 							</div>
 							<p v-else-if="!cargando && queryBusqueda" style="margin-top: 2em;">No se encontraron resultados.</p>
 						</div>
@@ -131,11 +182,13 @@
 											<input type="checkbox" v-model="expediente.subido_alfresco">
 											<span class="slider"></span>
 										</label>
+
 										{% verbatim %}
+										<!-- BOTON TIPO SWITCH PARA SELECCIONAR SI ESTA EN ALFRESCO O NO -->
 										<span>{{ expediente.subido_alfresco ? 'Subido a Alfresco' : 'No subido' }}</span>
 										{% endverbatim %}
 									</div>
-									<!-- AQUÍ ESTÁ EL BOTÓN QUE PEDISTE -->
+									<!-- BOTON para confirmar el cambio de si esta o no en alfresco -->
 									<button class="button small fit" @click="guardarCambioAlfresco">Confirmar cambio Alfresco</button>
 								</div>
 
@@ -234,70 +287,3 @@
 			</div>
 
 {% endblock %}
-
-
-
-
-<!--Ejemplo de contenido -->
-<!-- 
-<section id="movimientos" class="two">
-						<div class="container">
-
-							<header>
-								<h2>Movimientos de expedientes</h2>
-							</header>
-
-							<p>Vitae natoque dictum etiam semper magnis enim feugiat convallis convallis
-							egestas rhoncus ridiculus in quis risus amet curabitur tempor orci penatibus.
-							Tellus erat mauris ipsum fermentum etiam vivamus eget. Nunc nibh morbi quis
-							fusce hendrerit lacus ridiculus.</p>
-
-							<div class="row">
-								<div class="col-4 col-12-mobile">
-									<article class="item">
-										<a href="#" class="image fit"><img src="images/pic02.jpg" alt="" /></a>
-										<header>
-											<h3>Ipsum Feugiat</h3>
-										</header>
-									</article>
-									<article class="item">
-										<a href="#" class="image fit"><img src="images/pic03.jpg" alt="" /></a>
-										<header>
-											<h3>Rhoncus Semper</h3>
-										</header>
-									</article>
-								</div>
-								<div class="col-4 col-12-mobile">
-									<article class="item">
-										<a href="#" class="image fit"><img src="images/pic04.jpg" alt="" /></a>
-										<header>
-											<h3>Magna Nullam</h3>
-										</header>
-									</article>
-									<article class="item">
-										<a href="#" class="image fit"><img src="images/pic05.jpg" alt="" /></a>
-										<header>
-											<h3>Natoque Vitae</h3>
-										</header>
-									</article>
-								</div>
-								<div class="col-4 col-12-mobile">
-									<article class="item">
-										<a href="#" class="image fit"><img src="images/pic06.jpg" alt="" /></a>
-										<header>
-											<h3>Dolor Penatibus</h3>
-										</header>
-									</article>
-									<article class="item">
-										<a href="#" class="image fit"><img src="images/pic07.jpg" alt="" /></a>
-										<header>
-											<h3>Orci Convallis</h3>
-										</header>
-									</article>
-								</div>
-							</div>
-
-						</div>
-					</section>
-
--->

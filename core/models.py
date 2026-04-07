@@ -55,7 +55,7 @@ class Expediente(models.Model):
 
 class ExpedientePersona(models.Model):
     ROLES = [
-        ('imputado', 'Imputado'),
+        ('indagado', 'Indagado'),
         ('victima', 'Víctima'),
         ('denunciante', 'Denunciante'),
         ('testigo', 'Testigo'),

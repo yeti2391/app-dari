@@ -2794,6 +2794,78 @@ input:checked + .slider:before { transform: translateX(30px); }
     border: none;
 }
 
+.result-card h3 {
+    font-size: 1.2em;
+    font-weight: 600;
+}
+
+.result-card .badge {
+    float: right;
+    margin-top: -10px;
+}
+
+.result-card i {
+    margin-right: 5px;
+    color: #888;
+}
+
+/* Forzar mayúsculas en nombres */
+.uppercase {
+    text-transform: uppercase;
+}
+
+/* Estilo para la tabla de resultados compacta */
+.results-table-container {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    overflow-x: auto;
+    margin-top: 2em;
+}
+
+.results-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8em; /* Más pequeño para que entre más info */
+}
+
+.results-table th {
+    background-color: #273C53;
+    color: white;
+    padding: 12px;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.results-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #edf2f7;
+    vertical-align: middle;
+}
+
+.results-table tr:hover {
+    background-color: #f8fafc;
+}
+
+/* Paginación */
+.pagination {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 20px;
+    padding-bottom: 20px;
+}
+
+.pagination button {
+    padding: 5px 15px !important;
+    height: auto !important;
+    line-height: 1.5 !important;
+}
+
+.pagination button.active {
+    background-color: #273C53;
+}
+
 /* Mobile */
 
 	@media screen and (max-width: 736px) {
