@@ -262,28 +262,30 @@
 						</div>
 
 						<div class="row">
-							<!-- Columna Izquierda: Alfresco y Movimientos -->
+							<!-- Columna Izquierda: Gestión y Movimientos cortos -->
 							<div class="col-4 col-12-mobile">
-								<div class="form-container" style="padding: 1.5em;">
-									<h3>Estado Digital</h3>
-									<div class="switch-container">
-										<label class="switch">
-											<input type="checkbox" v-model="expediente.subido_alfresco">
-											<span class="slider"></span>
-										</label>
-										<span>{{ expediente.subido_alfresco ? 'Subido a Alfresco' : 'No subido' }}</span>
-									</div>
-									<button class="button small fit" @click="$root.guardarCambioAlfresco">Confirmar cambio Alfresco</button>
-								</div>
-
-								<div class="timeline" style="margin-top: 2em;">
-									<h3 style="font-size: 0.9em;">Historial de Movimientos</h3>
-									<div v-for="m in expediente.movimientos" class="timeline-item" style="font-size: 0.7em;">
-										<div class="timeline-dot"></div>
-										<div class="timeline-content">
-											<span class="timeline-date">{{ m.fecha }}</span>
-											<p><strong>{{ m.tipo }}</strong><br>{{ m.obs }}</p>
+								<!-- (Timeline lateral) -->
+								<div class="form-container" style="margin-top: 2em; padding: 1.5em;">
+									<h3 style="font-size: 0.9em;">Últimos Movimientos</h3>
+									<div class="timeline" v-if="movimientosResumidos.length > 0">
+										<div v-for="m in movimientosResumidos" class="timeline-item" style="font-size: 0.7em;">
+											<div class="timeline-dot"></div>
+											<div class="timeline-content">
+												<span class="timeline-date">{{ m.fecha }}</span>
+												<!-- USAMOS RUTA CORTA (EJ: DARI → DCI) -->
+												<p><strong style="color: #5983b0;">{{ m.ruta_corta }}</strong></p>
+											</div>
 										</div>
+									</div>
+									<p v-else style="font-size: 0.7em; font-style: italic;">Sin movimientos registrados.</p>
+									
+									<div style="margin-top: 1.5em;">
+										<button class="button small fit" @click="$root.abrirRegistroMovimiento()">
+											<i class="fas fa-exchange-alt"></i> Agregar Movimiento
+										</button>
+										<button class="button alt small fit" style="margin-top: 10px;" @click="seccionActual = 'historial_completo'">
+											<i class="fas fa-history"></i> Ver Historial Completo
+										</button>
 									</div>
 								</div>
 							</div>
@@ -330,7 +332,7 @@
 										<div class="col-6 col-12-mobile">
 											<label>Rol</label>
 											<select v-model="nuevaPersona.rol">
-												<option value="imputado">Imputado</option>
+												<option value="indagado">Indagado</option>
 												<option value="victima">Víctima</option>
 												<option value="denunciante">Denunciante</option>
 												<option value="testigo">Testigo</option>
@@ -373,6 +375,114 @@
 														<i class="fas fa-trash"></i> Quitar
 													</button>
 												</td>
+											</tr>
+										</tbody>
+									</table>
+								</div>
+							</div>
+						</div>
+					</div>
+					{% endverbatim %}
+				</section>
+
+				<!-- Registrar movimiento -->
+				<section id="registrar_movimiento" v-show="seccionActual === 'registrar_movimiento'">
+					<div class="container">
+						<header>
+							<a href="#" @click.prevent="seccionActual = 'detalles'"><i class="fas fa-arrow-left"></i> Cancelar y volver</a>
+							{% verbatim %}<h2>Registrar Movimiento para {{ nuevoMovimiento.codigo_expediente }}</h2>{% endverbatim %}
+						</header>
+
+						<div class="form-container">
+							<form @submit.prevent="guardarMovimiento">
+								<div class="row gtr-uniform">
+									<div class="col-6 col-12-mobile">
+										<label>Fecha y Hora del Traspaso (Manual)</label>
+										<input type="datetime-local" v-model="nuevoMovimiento.fecha" required>
+									</div>
+									<div class="col-6 col-12-mobile"></div> <!-- Espacio vacío -->
+
+									<div class="col-6 col-12-mobile">
+										<label>Oficina de Origen (Sale de:)</label>
+										<select v-model="nuevoMovimiento.origen_id" required>
+											<option v-for="o in oficinas" :value="o.id">{% verbatim %}{{ o.nombre }}{% endverbatim %}</option>
+										</select>
+									</div>
+									<div class="col-6 col-12-mobile">
+										<label>Oficina de Destino (Entra a:)</label>
+										<select v-model="nuevoMovimiento.destino_id" required>
+											<option v-for="o in oficinas" :value="o.id">{% verbatim %}{{ o.nombre }}{% endverbatim %}</option>
+										</select>
+									</div>
+
+									<div class="col-6 col-12-mobile">
+										<label>Entregado por:</label>
+										<input type="text" v-model="nuevoMovimiento.entregado_por" required>
+									</div>
+									<div class="col-6 col-12-mobile">
+										<label>Recibido por:</label>
+										<input type="text" v-model="nuevoMovimiento.recibido_por" required>
+									</div>
+
+									<div class="col-12">
+										<label>Observaciones (Tomos, folios, estado físico)</label>
+										<textarea v-model="nuevoMovimiento.observaciones" rows="3"></textarea>
+									</div>
+									<div class="col-12">
+										<button type="submit" class="button primary fit">Confirmar y Guardar Movimiento</button>
+									</div>
+								</div>
+							</form>
+						</div>
+					</div>
+				</section>
+
+				<!-- Historial Completo de movimientos de expedientes -->
+				<!-- Sección HISTORIAL COMPLETO -->
+				<section id="historial_completo" v-show="seccionActual === 'historial_completo'">
+					{% verbatim %}
+					<div class="container">
+						<header>
+							<a href="#" @click.prevent="seccionActual = 'detalles'"><i class="fas fa-arrow-left"></i> Volver a detalles</a>
+							<h2>Historial Completo: {{ expediente.codigo }}</h2>
+						</header>
+
+						<div class="row">
+							<!-- Timeline Izquierda (ABREVIATURAS) -->
+							<div class="col-4 col-12-mobile">
+								<div class="timeline">
+									<div v-for="m in expediente.movimientos" class="timeline-item">
+										<div class="timeline-dot"></div>
+										<div class="timeline-content">
+											<span class="timeline-date">{{ m.fecha }}</span>
+											<p><strong style="color: #5983b0;">{{ m.ruta_corta }}</strong></p>
+										</div>
+									</div>
+								</div>
+							</div>
+
+							<!-- Tabla Excel Derecha (NOMBRES COMPLETOS) -->
+							<div class="col-8 col-12-mobile">
+								<div class="results-table-container">
+									<table class="results-table" style="font-size: 0.7em;">
+										<thead>
+											<tr>
+												<th>Fecha/Hora</th>
+												<th>Origen → Destino (Nombre Completo)</th>
+												<th>Remite / Recibe</th>
+												<th>Observaciones</th>
+											</tr>
+										</thead>
+										<tbody>
+											<tr v-for="m in expediente.movimientos">
+												<td>{{ m.fecha }}</td>
+												<!-- USAMOS RUTA LARGA -->
+												<td style="font-weight: bold;">{{ m.ruta_larga }}</td>
+												<td>
+													<small>Entregó:</small> {{ m.entrega }}<br>
+													<small>Recibió:</small> {{ m.recibe }}
+												</td>
+												<td style="font-style: italic;">{{ m.obs }}</td>
 											</tr>
 										</tbody>
 									</table>

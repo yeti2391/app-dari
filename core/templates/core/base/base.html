@@ -48,6 +48,9 @@
 							resultados: [],
 							paginaActual: 1,
 							resultadosPorPagina: 25,
+							// para el registro de movimientos:
+							historialCompleto: [], // Para la tabla excel
+          					ultimoDestinoId: null, // Para autocompletar origen
 							
 							// Detalles del expediente seleccionado
 							expediente: {
@@ -103,7 +106,11 @@
 						},
 						totalPaginas() {
 							return Math.ceil(this.resultados.length / this.resultadosPorPagina);
-						}
+						},
+						// para movimientos de expedientes:
+						 movimientosResumidos() {
+							return this.expediente.movimientos.slice(0, 3);
+						},
 					},
 					
 					mounted() {
@@ -154,15 +161,47 @@
 								const response = await fetch(`/api/expediente/${id}/`);
 								const data = await response.json();
 								this.expediente = data;
-								// Al cargar detalles, también podrías sincronizar personasVinculadas si quisieras
-								this.personasVinculadas = data.personas; 
+								this.personasVinculadas = data.personas;
+								
+								// Determinamos la última oficina donde estuvo el expediente
+								if (data.movimientos.length > 0) {
+									// El primer movimiento del array (ordenado por -fecha) es el último destino
+									this.ultimoDestinoId = data.movimientos[0].destino_id;
+								} else {
+									// Si no tiene movimientos, el origen por defecto es la oficina de creación
+									this.ultimoDestinoId = data.oficina_id; 
+								}
+
 								this.seccionActual = 'detalles';
-							} catch (error) {
-								alert("Error al cargar detalles");
+							} catch (error) { alert("Error al cargar detalles"); }
+						},
+						abrirRegistroMovimiento() {
+							// Pre-configuramos el formulario de movimiento
+							this.nuevoMovimiento = {
+								codigo_expediente: this.expediente.codigo,
+								origen_id: this.ultimoDestinoId, // Auto-completado
+								destino_id: '',
+								fecha: new Date().toISOString().slice(0, 16), // Fecha y hora actual formato input
+								entregado_por: '',
+								recibido_por: '',
+								observaciones: ''
+							};
+							this.seccionActual = 'registrar_movimiento';
+						},
+
+						async guardarMovimiento() {
+							const res = await fetch('/api/movimientos/registrar/', {
+								method: 'POST',
+								headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+								body: JSON.stringify(this.nuevoMovimiento)
+							});
+							if(res.ok) {
+								alert("Movimiento registrado con éxito");
+								this.verDetalles(this.expediente.id); // Recargamos detalles para ver el nuevo movimiento
 							}
 						},
 
-						async guardarCambioAlfresco() {
+					async guardarCambioAlfresco() {
 							try {
 								const response = await fetch(`/api/expediente/${this.expediente.id}/alfresco/`, {
 									method: 'POST',
@@ -278,23 +317,11 @@
 						},
 						async buscarHistorial() {
 							const res = await fetch(`/api/movimientos/historial/?codigo=${this.nuevoMovimiento.codigo_expediente}`);
-							const data = await response.json();
-							this.historialBusqueda = data.historial;
-						},
-						async guardarMovimiento() {
-							const res = await fetch('/api/movimientos/registrar/', {
-								method: 'POST',
-								headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
-								body: JSON.stringify(this.nuevoMovimiento)
-							});
-							if(res.ok) {
-								alert("Movimiento registrado");
-								this.buscarHistorial(); // Actualizar timeline
-							}
-						}
-
+						const data = await res.json();
+						this.historialBusqueda = data.historial;
 					}
-				}).mount('#app')
+				}
+			}).mount('#app')
 		</script>
         
 	</body>

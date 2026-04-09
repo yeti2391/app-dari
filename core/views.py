@@ -72,7 +72,12 @@ def detalle_expediente(request, id):
     for m in movs:
         lista_movs.append({
             'fecha': m.fecha.strftime("%d/%m/%Y %H:%M"),
-            'tipo': f"{m.origen.nombre} -> {m.destino.nombre}", # Resumen para el timeline
+            # Ruta corta para Timelines (Abreviaturas)
+            'ruta_corta': f"{m.origen.codigo} → {m.destino.codigo}", 
+            # Ruta larga para Tabla Excel (Nombres completos)
+            'ruta_larga': f"{m.origen.nombre} → {m.destino.nombre}",
+            'entrega': m.entregado_por,
+            'recibe': m.recibido_por,
             'obs': m.observaciones
         })
 

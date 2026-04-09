@@ -21,13 +21,7 @@
                         <span class="icon solid fa-search">Buscar</span>
                     </a>
                 </li>
-                
-                <li :class="{ 'active': seccionActual === 'movimientos' }">
-                    <a href="#" @click.prevent="seccionActual = 'movimientos'" id="portfolio-link">
-                        <span class="icon solid fa-dolly">Movimientos expedientes</span>
-                    </a>
-                </li>
-                
+                       
                 <li :class="{ 'active': seccionActual === 'crear' }">
                     <a href="#" @click.prevent="seccionActual = 'crear'" id="about-link">
                         <span class="icon solid fa-folder-plus">Crear expediente</span>
