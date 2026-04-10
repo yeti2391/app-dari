@@ -20,6 +20,7 @@ def buscar_expedientes(request):
 
     if tipo == 'persona':
         # Buscamos coincidencias en datos de la persona vinculada
+        # icontains en Django ya es de por sí insensible a mayúsculas/minúsculas
         filtros = (
             Q(expedientepersona__persona__primer_nombre__icontains=query) |
             Q(expedientepersona__persona__segundo_nombre__icontains=query) |
@@ -27,38 +28,40 @@ def buscar_expedientes(request):
             Q(expedientepersona__persona__segundo_apellido__icontains=query) |
             Q(expedientepersona__persona__documento__icontains=query)
         )
-    else: # expediente
-        # Buscamos en el expediente propiamente dicho
+    else: # tipo == 'expediente'
+        # Normalizamos la consulta para que coincida con el estándar de mayúsculas del sistema
+        query_normalizada = query.upper()
         filtros = (
-            Q(codigo__icontains=query) |
+            Q(codigo__icontains=query_normalizada) |
             Q(observaciones__icontains=query) |
             Q(oficina__nombre__icontains=query) |
             Q(oficina__codigo__icontains=query)
         )
 
-    # Realizamos la consulta con select_related para optimizar la oficina
+    # Obtenemos los expedientes que coinciden con los filtros
     expedientes = Expediente.objects.filter(filtros).select_related('oficina').distinct()
 
     data = []
     for exp in expedientes:
-        # Obtenemos las personas vinculadas para este expediente
+        # Obtenemos las personas vinculadas para cada expediente encontrado
         vias = ExpedientePersona.objects.filter(expediente=exp).select_related('persona', 'persona__nacionalidad')
         
         if vias.exists():
             for v in vias:
                 data.append({
                     'expediente_id': exp.id,
-                    'expediente_codigo': exp.codigo,
+                    'expediente_codigo': exp.codigo, # Vendrá en mayúsculas desde la DB
                     'oficina': exp.oficina.nombre,
                     'fecha_ingreso': exp.fecha_ingreso.strftime("%d/%m/%Y"),
                     'persona_id': v.persona.id,
+                    # Concatenamos los nombres aquí para la tabla de resultados
                     'persona_nombre': f"{v.persona.primer_nombre} {v.persona.primer_apellido}",
                     'documento': v.persona.documento,
                     'nacionalidad_cod': v.persona.nacionalidad.codigo,
                     'rol': v.get_rol_display()
                 })
         else:
-            # Si no tiene personas, devolvemos una fila vacía de persona pero con datos de exp
+            # Si el expediente no tiene personas asociadas aún, devolvemos la fila de expediente vacía
             data.append({
                 'expediente_id': exp.id,
                 'expediente_codigo': exp.codigo,
@@ -175,14 +178,28 @@ def actualizar_alfresco(request, id):
 def crear_expediente(request):
     if request.method == 'POST':
         data = json.loads(request.body)
-        oficina = Oficina.objects.get(id=data['oficina_id'])
-        nuevo_exp = Expediente.objects.create(
-            codigo=data['codigo'],
-            fecha_ingreso=data['fecha'],
-            oficina=oficina,
-            observaciones=data.get('observaciones', ''),
-        )
-        return JsonResponse({'status': 'ok', 'id': nuevo_exp.id})
+        
+        # 1. Normalizar la entrada para la validación
+        codigo_nuevo = data['codigo'].upper().strip()
+        
+        # 2. Verificar si ya existe (usamos __iexact para ignorar mayúsculas/minúsculas)
+        if Expediente.objects.filter(codigo__iexact=codigo_nuevo).exists():
+            return JsonResponse({
+                'status': 'error', 
+                'message': f'El código de expediente "{codigo_nuevo}" ya existe en el sistema.'
+            }, status=400) # Devolvemos un error 400 (Bad Request)
+        
+        try:
+            oficina = Oficina.objects.get(id=data['oficina_id'])
+            nuevo_exp = Expediente.objects.create(
+                codigo=codigo_nuevo,
+                fecha_ingreso=data['fecha'],
+                oficina=oficina,
+                observaciones=data.get('observaciones', ''),
+            )
+            return JsonResponse({'status': 'ok', 'id': nuevo_exp.id})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
 def expedientes_recientes(request):
     recientes = Expediente.objects.all().order_by('-id')[:10]

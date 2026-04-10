@@ -244,35 +244,19 @@
 									body: JSON.stringify(this.nuevoExpediente)
 								});
 
+								const data = await response.json(); // Leemos la respuesta siempre
+
 								if (response.ok) {
-									// 1. Obtenemos la respuesta del servidor (que trae el ID)
-									const data = await response.json();
-
-									// 2. Mostramos el mensaje de éxito
-									alert("Expediente creado con éxito. Redirigiendo a detalles...");
-
-									// 3. Limpiamos el formulario para la próxima vez
-									this.nuevoExpediente = { 
-										codigo: '', 
-										oficina_id: '', 
-										fecha: new Date().toISOString().split('T')[0], 
-										observaciones: '' 
-									};
-									// IMPORTANTE: Recargamos la lista de recientes antes de saltar a detalles
+									alert("Expediente creado con éxito.");
 									this.cargarRecientes(); 
-									
-									this.nuevoExpediente = { codigo: '', oficina_id: '', fecha: new Date().toISOString().split('T')[0], observaciones: '' };
-
-									// 4. Llamamos a nuestra función verDetalles usando el ID que nos dio Django
-									// Esto automáticamente cargará los datos y cambiará la sección a 'detalles'
 									this.verDetalles(data.id);
-									
+									this.nuevoExpediente = { codigo: '', oficina_id: '', fecha: new Date().toISOString().split('T')[0], observaciones: '' };
 								} else {
-									alert("Error en el servidor al intentar crear el expediente.");
+									// Aquí mostramos el mensaje de "Expediente ya existe" que enviamos desde Django
+									alert("Error: " + (data.message || "No se pudo crear el expediente."));
 								}
 							} catch (error) {
-								console.error("Error en la petición:", error);
-								alert("No se pudo conectar con el servidor.");
+								alert("Ocurrió un error al conectar con el servidor.");
 							}
 						},
 

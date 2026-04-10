@@ -42,12 +42,18 @@ class Persona(models.Model):
 
 
 class Expediente(models.Model):
-    codigo = models.CharField(max_length=50, unique=True)
+    codigo = models.CharField(max_length=10, unique=True)
     fecha_ingreso = models.DateField()
     observaciones = models.TextField(blank=True, null=True)
     oficina = models.ForeignKey(Oficina, on_delete=models.PROTECT)
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     subido_alfresco = models.BooleanField(default=False)
+
+    def save(self, *args, **kwargs):
+        # Forzar mayúsculas y quitar espacios en blanco antes de guardar
+        if self.codigo:
+            self.codigo = self.codigo.upper().strip()
+        super(Expediente, self).save(*args, **kwargs)
 
     def __str__(self):
         return self.codigo
@@ -59,6 +65,7 @@ class ExpedientePersona(models.Model):
         ('victima', 'Víctima'),
         ('denunciante', 'Denunciante'),
         ('testigo', 'Testigo'),
+        ('otro', 'Otro'),
     ]
 
     expediente = models.ForeignKey(Expediente, on_delete=models.CASCADE)
