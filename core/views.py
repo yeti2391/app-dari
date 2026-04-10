@@ -10,42 +10,67 @@ from .models import *
 def home(request):
     return render(request, 'core/home.html')
 
-# 2. Buscar (Universal)
+# 2. Buscar 
 def buscar_expedientes(request):
     query = request.GET.get('q', '').strip()
+    tipo = request.GET.get('tipo', 'persona').strip()
+    
     if not query:
         return JsonResponse({'resultados': []})
 
-    resultados_raw = Expediente.objects.filter(
-        Q(codigo__icontains=query) | 
-        Q(observaciones__icontains=query) |
-        Q(expedientepersona__persona__primer_nombre__icontains=query) |
-        Q(expedientepersona__persona__primer_apellido__icontains=query) |
-        Q(expedientepersona__persona__documento__icontains=query)
-    ).annotate(
-        p_id=F('expedientepersona__persona__id'),
-        p_nom=Concat('expedientepersona__persona__primer_nombre', Value(' '), 'expedientepersona__persona__primer_apellido'),
-        p_doc=F('expedientepersona__persona__documento'),
-        p_pais=F('expedientepersona__persona__nacionalidad__codigo'),
-        p_rol=F('expedientepersona__rol')
-    ).values(
-        'id', 'codigo', 'oficina__nombre', 'fecha_ingreso',
-        'p_id', 'p_nom', 'p_doc', 'p_pais', 'p_rol'
-    ).distinct()
+    if tipo == 'persona':
+        # Buscamos coincidencias en datos de la persona vinculada
+        filtros = (
+            Q(expedientepersona__persona__primer_nombre__icontains=query) |
+            Q(expedientepersona__persona__segundo_nombre__icontains=query) |
+            Q(expedientepersona__persona__primer_apellido__icontains=query) |
+            Q(expedientepersona__persona__segundo_apellido__icontains=query) |
+            Q(expedientepersona__persona__documento__icontains=query)
+        )
+    else: # expediente
+        # Buscamos en el expediente propiamente dicho
+        filtros = (
+            Q(codigo__icontains=query) |
+            Q(observaciones__icontains=query) |
+            Q(oficina__nombre__icontains=query) |
+            Q(oficina__codigo__icontains=query)
+        )
+
+    # Realizamos la consulta con select_related para optimizar la oficina
+    expedientes = Expediente.objects.filter(filtros).select_related('oficina').distinct()
 
     data = []
-    for r in resultados_raw:
-        data.append({
-            'expediente_id': r['id'],
-            'expediente_codigo': r['codigo'],
-            'oficina': r['oficina__nombre'],
-            'fecha_ingreso': r['fecha_ingreso'].strftime("%d/%m/%Y"),
-            'persona_id': r['p_id'] or '',
-            'persona_nombre': r['p_nom'] or '--- SIN ASIGNAR ---',
-            'documento': r['p_doc'] or '---',
-            'nacionalidad_cod': r['p_pais'] or '---',
-            'rol': r['p_rol'] or 'N/A'
-        })
+    for exp in expedientes:
+        # Obtenemos las personas vinculadas para este expediente
+        vias = ExpedientePersona.objects.filter(expediente=exp).select_related('persona', 'persona__nacionalidad')
+        
+        if vias.exists():
+            for v in vias:
+                data.append({
+                    'expediente_id': exp.id,
+                    'expediente_codigo': exp.codigo,
+                    'oficina': exp.oficina.nombre,
+                    'fecha_ingreso': exp.fecha_ingreso.strftime("%d/%m/%Y"),
+                    'persona_id': v.persona.id,
+                    'persona_nombre': f"{v.persona.primer_nombre} {v.persona.primer_apellido}",
+                    'documento': v.persona.documento,
+                    'nacionalidad_cod': v.persona.nacionalidad.codigo,
+                    'rol': v.get_rol_display()
+                })
+        else:
+            # Si no tiene personas, devolvemos una fila vacía de persona pero con datos de exp
+            data.append({
+                'expediente_id': exp.id,
+                'expediente_codigo': exp.codigo,
+                'oficina': exp.oficina.nombre,
+                'fecha_ingreso': exp.fecha_ingreso.strftime("%d/%m/%Y"),
+                'persona_id': '',
+                'persona_nombre': '--- SIN ASIGNAR ---',
+                'documento': '---',
+                'nacionalidad_cod': '---',
+                'rol': 'N/A'
+            })
+            
     return JsonResponse({'resultados': data})
 
 # 3. Detalles del expediente
@@ -101,17 +126,24 @@ def registrar_movimiento(request):
     if request.method == 'POST':
         data = json.loads(request.body)
         exp = get_object_or_404(Expediente, codigo=data['codigo_expediente'])
+        oficina_destino = Oficina.objects.get(id=data['destino_id'])
+        
+        # 1. Creamos el registro del movimiento
         mov = ExpedienteMovimiento.objects.create(
             expediente=exp,
             origen_id=data['origen_id'],
-            destino_id=data['destino_id'],
+            destino=oficina_destino,
             fecha=data['fecha'],
             entregado_por=data['entregado_por'],
             recibido_por=data['recibido_por'],
             observaciones=data.get('observaciones')
         )
+
+        # 2. Actualizamos la oficina actual del expediente
+        exp.oficina = oficina_destino
+        exp.save()
+
         return JsonResponse({'status': 'ok'})
-    return JsonResponse({'status': 'error'}, status=400)
 
 def historial_movimientos(request):
     codigo = request.GET.get('codigo')

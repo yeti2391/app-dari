@@ -44,7 +44,8 @@
 						return {
 							seccionActual: 'buscar',
 							oficinas: [], 
-							queryBusqueda: '',
+							queryBusqueda: '', //revisar sino es redundante
+							tipoBusqueda: 'persona', // Valor por defecto
 							resultados: [],
 							paginaActual: 1,
 							resultadosPorPagina: 25,
@@ -95,6 +96,7 @@
 							},
 							historialBusqueda: [],
 							tiposMovimiento: [],
+
 						}
 					},
 					computed: {
@@ -132,17 +134,25 @@
 						},
 
 						async buscar() {
-								this.cargando = true;
-								this.paginaActual = 1; // Resetear a página 1 en cada búsqueda
-								try {
-									const response = await fetch(`/api/buscar/?q=${encodeURIComponent(this.queryBusqueda)}`);
-									const data = await response.json();
-									this.resultados = data.resultados;
-								} catch (error) {
-									console.error(error);
-								} finally {
-									this.cargando = false;
-								}
+							if (!this.queryBusqueda.trim()) return; // No buscar si está vacío
+							
+							this.cargando = true;
+							this.paginaActual = 1;
+							this.resultados = []; // Limpiar antes de buscar
+							
+							try {
+								// IMPORTANTE: Revisar que la URL coincida con urls.py y use la barra final antes del ?
+								const url = `/api/buscar/?q=${encodeURIComponent(this.queryBusqueda)}&tipo=${this.tipoBusqueda}`;
+								console.log("Buscando en:", url); // Para debug en consola
+								
+								const response = await fetch(url);
+								const data = await response.json();
+								this.resultados = data.resultados;
+							} catch (error) {
+								console.error("Error en la petición fetch:", error);
+							} finally {
+								this.cargando = false;
+							}
 						},
 						
 						async cargarPaises() {

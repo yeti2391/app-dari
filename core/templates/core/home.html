@@ -10,32 +10,46 @@
 				<!-- Buscar -->
 					<section id="buscar" v-show="seccionActual === 'buscar'">
 						<div class="container">
-							<header><h2>Buscar Información</h2></header>
+							<header><h2>Buscador del Archivo</h2></header>
+							
 							<div class="form-container">
 								<form @submit.prevent="buscar">
-									<div class="row gtr-50">
+									<!-- Selector de Tipo Moderno -->
+									<div class="search-type-selector">
+										<label title="Búsqueda por datos personales">
+											<input type="radio" v-model="tipoBusqueda" value="persona">
+											<span><i class="fas fa-user"></i> PERSONA</span>
+										</label>
+										<label title="Búsqueda por datos del expediente">
+											<input type="radio" v-model="tipoBusqueda" value="expediente">
+											<span><i class="fas fa-folder"></i> EXPEDIENTE</span>
+										</label>
+									</div>
+
+									<div class="row gtr-uniform">
 										<div class="col-9 col-12-mobile">
-											<input type="text" v-model="queryBusqueda" placeholder="Ingrese término de búsqueda..." />
+											<input type="text" v-model="queryBusqueda" 
+												:placeholder="tipoBusqueda === 'persona' ? 'Nombre, Apellido o Documento...' : 'Código de Exp, Oficina u Observaciones...'" />
 										</div>
 										<div class="col-3 col-12-mobile">
-											<button type="submit" class="button fit icon solid fa-search">Buscar</button>
+											<button type="submit" class="button fit icon solid fa-search">Buscar Now</button>
 										</div>
 									</div>
 								</form>
 							</div>
 
-							<!-- Listado de Resultados Dinámico -->
-							<div v-if="resultados.length > 0">
+							<!-- LISTADO DE RESULTADOS (RESTAURADO) -->
+							<div v-if="resultados.length > 0" style="margin-top: 3em;">
 								<div class="results-table-container">
 									<table class="results-table">
 										<thead>
 											<tr>
 												<th>Persona Vinculada</th>
 												<th>Documento</th>
-												<th title="Código de País">Nac.</th>
+												<th>Nac.</th>
 												<th>Rol</th>
 												<th>Expediente</th>
-												<th>Oficina</th>
+												<th>Oficina Actual</th>
 												<th>Ver</th>
 											</tr>
 										</thead>
@@ -50,12 +64,12 @@
 													{{ res.nacionalidad_cod }}
 												</td>
 												<td>
-													<span class="badge" style="font-size: 0.7em;">{{ res.rol }}</span>
+													<span class="badge" style="font-size: 0.7em; padding: 2px 8px;">{{ res.rol }}</span>
 												</td>
 												<td class="uppercase" style="font-weight: bold;">{{ res.expediente_codigo }}</td>
 												<td>{{ res.oficina }}</td>
 												<td>
-													<button @click="$root.verDetalles(res.expediente_id)" class="button small">
+													<button @click="$root.verDetalles(res.expediente_id)" class="button small" style="padding: 0 10px; height: 30px; line-height: 30px;">
 														<i class="fas fa-eye"></i>
 													</button>
 												</td>
@@ -65,7 +79,7 @@
 									</table>
 								</div>
 
-								<!-- Controles de Paginación -->
+								<!-- Paginación -->
 								<div class="pagination" v-if="totalPaginas > 1">
 									<button class="button alt small" :disabled="paginaActual === 1" @click="paginaActual--">Anterior</button>
 									<span style="align-self: center; font-size: 0.8em;">Página {{ paginaActual }} de {{ totalPaginas }}</span>
@@ -73,11 +87,14 @@
 								</div>
 								
 								<p style="text-align: right; font-size: 0.7em; margin-top: 10px;">
-									Total de registros encontrados: {{ resultados.length }}
+									Registros encontrados: {{ resultados.length }}
 								</p>
-							</div> <!-- Aquí se cierra el v-if de resultados -->						
-							<p v-else-if="!cargando && queryBusqueda" style="margin-top: 2em;">No se encontraron resultados.</p>
-						</div> <!-- Cierre del container -->
+							</div>
+
+							<p v-else-if="!cargando && queryBusqueda" style="margin-top: 2em; text-align: center;">
+								No se encontraron resultados para la búsqueda solicitada.
+							</p>
+						</div>
 					</section>
 
 				<!-- Movimientos de expedientes -->
@@ -264,6 +281,23 @@
 						<div class="row">
 							<!-- Columna Izquierda: Gestión y Movimientos cortos -->
 							<div class="col-4 col-12-mobile">
+								 <!-- Switch ALFRESCO -->
+								<div class="form-container" style="padding: 1.5em; margin-bottom: 2em;">
+									<h3>Estado Digital</h3>
+									<div class="switch-container" style="margin-bottom: 1.5em; display: flex; align-items: center; gap: 15px;">
+										<label class="switch">
+											<input type="checkbox" v-model="expediente.subido_alfresco">
+											<span class="slider"></span>
+										</label>										
+										<span style="font-size: 0.85em; font-weight: 600;">
+											{{ expediente.subido_alfresco ? 'Subido a Alfresco' : 'No subido a Alfresco' }}
+										</span>										
+									</div>
+									<button class="button small fit" @click="$root.guardarCambioAlfresco">
+										<i class="fas fa-save"></i> Registrar cambio
+									</button>
+								</div>
+
 								<!-- (Timeline lateral) -->
 								<div class="form-container" style="margin-top: 2em; padding: 1.5em;">
 									<h3 style="font-size: 0.9em;">Últimos Movimientos</h3>
@@ -281,7 +315,7 @@
 									
 									<div style="margin-top: 1.5em;">
 										<button class="button small fit" @click="$root.abrirRegistroMovimiento()">
-											<i class="fas fa-exchange-alt"></i> Agregar Movimiento
+											<i class="fas fa-exchange-alt"></i> Registrar Movimiento
 										</button>
 										<button class="button alt small fit" style="margin-top: 10px;" @click="seccionActual = 'historial_completo'">
 											<i class="fas fa-history"></i> Ver Historial Completo
@@ -438,7 +472,6 @@
 				</section>
 
 				<!-- Historial Completo de movimientos de expedientes -->
-				<!-- Sección HISTORIAL COMPLETO -->
 				<section id="historial_completo" v-show="seccionActual === 'historial_completo'">
 					{% verbatim %}
 					<div class="container">

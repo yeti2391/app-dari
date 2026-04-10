@@ -68,14 +68,6 @@ class ExpedientePersona(models.Model):
     def __str__(self):
         return f"{self.persona} - {self.rol}"
 
-
-class TipoMovimiento(models.Model):
-    nombre = models.CharField(max_length=100)
-
-    def __str__(self):
-        return self.nombre
-
-
 class ExpedienteMovimiento(models.Model):
     expediente = models.ForeignKey(Expediente, on_delete=models.CASCADE)
     # Registramos de qué oficina sale y a cuál entra

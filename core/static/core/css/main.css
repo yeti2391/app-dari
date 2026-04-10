@@ -2909,6 +2909,53 @@ input[list] {
     background-size: 1em;
 }
 
+/* Selector de búsqueda tipo pestañas modernas */
+.search-type-selector {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 25px;
+    background: #f0f4f8; /* Gris suave de fondo */
+    border-radius: 10px;
+    overflow: hidden;
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.search-type-selector label {
+    flex: 1;
+    cursor: pointer;
+    margin-bottom: 0;
+    transition: all 0.3s ease;
+}
+
+.search-type-selector input[type="radio"] {
+    display: none; /* Ocultamos el radio original */
+}
+
+/* El texto y el icono */
+.search-type-selector span {
+    display: block;
+    padding: 15px;
+    text-align: center;
+    font-weight: 600;
+    color: #888;
+    font-size: 0.9em;
+    letter-spacing: 1px;
+}
+
+/* Hover: Mismo azul que el botón de buscar */
+.search-type-selector label:hover span {
+    background: #273C53;
+    color: white;
+}
+
+/* Activo (Click): Se mantiene el color azul */
+.search-type-selector input[type="radio"]:checked + span {
+    background: #273C53;
+    color: white;
+}
+
 /* Mobile */
 
 	@media screen and (max-width: 736px) {
