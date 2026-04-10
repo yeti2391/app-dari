@@ -37,6 +37,10 @@ class Persona(models.Model):
     nacionalidad = models.ForeignKey(Pais, on_delete=models.PROTECT)
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
 
+    # Se asegura que no haya dos personas con el mismo documento y tipo de documento
+    class Meta:
+        unique_together = ('documento', 'tipo_documento')
+
     def __str__(self):
         return f"{self.primer_nombre} {self.primer_apellido}"
 
