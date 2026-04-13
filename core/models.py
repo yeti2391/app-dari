@@ -4,11 +4,20 @@ from django.contrib.auth.models import User
 # Create your models here.
 
 class Pais(models.Model):
-    codigo = models.CharField(max_length=10, unique=True)
+    # BASADO EN ISO 3166 y se agrega OTRO con codigos XX y XXX para casos no identificados
+    # ISO 3166 Alpha-2 (Ej: UY)
+    codigo_alpha2 = models.CharField(max_length=2, unique=True, null=True, blank=True)
+    # ISO 3166 Alpha-3 (Ej: URY)
+    codigo_alpha3 = models.CharField(max_length=3, unique=True, null=True, blank=True)
+    # Nombre oficial
     nombre = models.CharField(max_length=100)
 
     def __str__(self):
-        return self.nombre
+        return f"{self.nombre} ({self.codigo_alpha2})"
+
+    class Meta:
+        verbose_name_plural = "Países"
+        ordering = ['nombre']
 
 
 class TipoDocumento(models.Model):
@@ -27,22 +36,59 @@ class Oficina(models.Model):
 
 
 class Persona(models.Model):
-    documento = models.CharField(max_length=20)
-    tipo_documento = models.ForeignKey(TipoDocumento, on_delete=models.PROTECT)
-    primer_nombre = models.CharField(max_length=100)
+    documento = models.CharField(max_length=20, blank=True, null=True)
+    tipo_documento = models.ForeignKey(TipoDocumento, on_delete=models.PROTECT, blank=True, null=True)
+    
+    # Todos los nombres son opcionales para soportar registros parciales o solo por Alias
+    primer_nombre = models.CharField(max_length=100, blank=True, null=True)
     segundo_nombre = models.CharField(max_length=100, blank=True, null=True)
-    primer_apellido = models.CharField(max_length=100)
+    primer_apellido = models.CharField(max_length=100, blank=True, null=True)
     segundo_apellido = models.CharField(max_length=100, blank=True, null=True)
+    
     fecha_nacimiento = models.DateField(null=True, blank=True)
-    nacionalidad = models.ForeignKey(Pais, on_delete=models.PROTECT)
+    nacionalidad = models.ForeignKey(Pais, on_delete=models.PROTECT, blank=True, null=True)
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
 
-    # Se asegura que no haya dos personas con el mismo documento y tipo de documento
     class Meta:
+        # Permite que el par (documento, tipo) sea único, 
+        # PostgreSQL permitirá múltiples nulos aquí sin conflicto.
         unique_together = ('documento', 'tipo_documento')
 
     def __str__(self):
-        return f"{self.primer_nombre} {self.primer_apellido}"
+        # Intentamos armar el nombre legal
+        nombre_completo = f"{self.primer_nombre or ''} {self.primer_apellido or ''}".strip()
+        if nombre_completo:
+            return nombre_completo
+        
+        # Si no hay nombre, intentamos mostrar el primer alias que encontremos
+        # Usamos .first() gracias al related_name='aliases' de la clase Alias
+        primer_alias = self.aliases.first()
+        if primer_alias:
+            return f"ALIAS: {primer_alias.alias}"
+            
+        return f"Persona ID: {self.id} (Sin datos filiatorios)"
+
+    def save(self, *args, **kwargs):
+        # Normalizamos TODOS los campos de texto a Mayúsculas automáticamente
+        if self.primer_nombre: self.primer_nombre = self.primer_nombre.upper().strip()
+        if self.segundo_nombre: self.segundo_nombre = self.segundo_nombre.upper().strip()
+        if self.primer_apellido: self.primer_apellido = self.primer_apellido.upper().strip()
+        if self.segundo_apellido: self.segundo_apellido = self.segundo_apellido.upper().strip()
+        super(Persona, self).save(*args, **kwargs)
+
+class Alias(models.Model):
+    # 'related_name' permite acceder desde Persona como persona.aliases.all()
+    persona = models.ForeignKey(Persona, on_delete=models.CASCADE, related_name='aliases')
+    alias = models.CharField(max_length=150)
+
+    def save(self, *args, **kwargs):
+        # Los alias también se guardan siempre en mayúsculas para búsquedas precisas
+        if self.alias:
+            self.alias = self.alias.upper().strip()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.alias
 
 
 class Expediente(models.Model):

@@ -26,7 +26,8 @@ def buscar_expedientes(request):
             Q(expedientepersona__persona__segundo_nombre__icontains=query) |
             Q(expedientepersona__persona__primer_apellido__icontains=query) |
             Q(expedientepersona__persona__segundo_apellido__icontains=query) |
-            Q(expedientepersona__persona__documento__icontains=query)
+            Q(expedientepersona__persona__documento__icontains=query) |
+            Q(expedientepersona__persona__aliases__alias__icontains=query)
         )
     else: # tipo == 'expediente'
         # Normalizamos la consulta para que coincida con el estándar de mayúsculas del sistema
@@ -56,8 +57,10 @@ def buscar_expedientes(request):
                     'persona_id': v.persona.id,
                     # Concatenamos los nombres aquí para la tabla de resultados
                     'persona_nombre': f"{v.persona.primer_nombre} {v.persona.primer_apellido}",
+                    # Unimos todos los alias en un solo string para mostrar en la tabla
+                    'persona_aliases': ", ".join([a.alias for a in v.persona.aliases.all()]),
                     'documento': v.persona.documento,
-                    'nacionalidad_cod': v.persona.nacionalidad.codigo,
+                    'nacionalidad_cod': v.persona.nacionalidad.codigo_alpha2 if v.persona.nacionalidad else None,
                     'rol': v.get_rol_display()
                 })
         else:
@@ -81,7 +84,7 @@ def detalle_expediente(request, id):
     exp = get_object_or_404(Expediente, id=id)
     
     # Personas vinculadas
-    personas_vinculadas = ExpedientePersona.objects.filter(expediente=exp).select_related('persona', 'persona__nacionalidad')
+    personas_vinculadas = ExpedientePersona.objects.filter(expediente=exp).select_related('persona', 'persona__nacionalidad').prefetch_related('persona__aliases')
     lista_personas = []
     for vp in personas_vinculadas:
         lista_personas.append({
@@ -91,7 +94,8 @@ def detalle_expediente(request, id):
             'segundo_apellido': vp.persona.segundo_apellido or '',
             'documento': vp.persona.documento,
             'nacionalidad_nombre': vp.persona.nacionalidad.nombre,
-            'rol': vp.get_rol_display()
+            'rol': vp.get_rol_display(),
+            'persona_aliases': ", ".join([a.alias for a in vp.persona.aliases.all()])
         })
 
     # Movimientos para el Timeline de detalles
@@ -117,12 +121,6 @@ def detalle_expediente(request, id):
         'personas': lista_personas,
         'movimientos': lista_movs
     })
-
-# --- VISTAS DE MOVIMIENTOS (EXTERNAS) ---
-
-def lista_tipos_movimiento(request):
-    tipos = TipoMovimiento.objects.all().values('id', 'nombre')
-    return JsonResponse({'tipos': list(tipos)})
 
 @csrf_exempt
 def registrar_movimiento(request):
@@ -254,5 +252,15 @@ def vincular_persona(request, id):
             persona=persona,
             defaults={'rol': data['rol'].lower()}
         )
+
+         # GESTIÓN DE ALIAS
+        if data.get('alias'):
+            # Separamos por comas si el usuario escribió varios
+            lista_alias = data['alias'].split(',')
+            for a in lista_alias:
+                nombre_alias = a.strip().upper()
+                if nombre_alias:
+                    Alias.objects.get_or_create(persona=persona, alias=nombre_alias)
+    
 
         return JsonResponse({'status': 'ok'})

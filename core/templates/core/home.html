@@ -29,10 +29,10 @@
 									<div class="row gtr-uniform">
 										<div class="col-9 col-12-mobile">
 											<input type="text" v-model="queryBusqueda" 
-												:placeholder="tipoBusqueda === 'persona' ? 'Nombre, Apellido o Documento...' : 'Código de Exp, Oficina u Observaciones...'" />
+												:placeholder="tipoBusqueda === 'persona' ? 'Nombre, Apellido, Alias o Documento...' : 'Código de Exp, Oficina u Observaciones...'" />
 										</div>
 										<div class="col-3 col-12-mobile">
-											<button type="submit" class="button fit icon solid fa-search">Buscar Now</button>
+											<button type="submit" class="button fit icon solid fa-search">Buscar</button>
 										</div>
 									</div>
 								</form>
@@ -328,7 +328,6 @@
 							<div class="col-8 col-12-mobile">
 								<div class="form-container">
 									<h3>Vincular Nueva Persona</h3>
-									<!-- ... resto del formulario de vinculación (se mantiene igual) ... -->
 									<div class="row gtr-uniform">
 										<div class="col-6 col-12-mobile">
 											<label>Primer Nombre</label>
@@ -346,6 +345,10 @@
 											<label>Segundo Apellido</label>
 											<input type="text" v-model="nuevaPersona.segundo_apellido">
 										</div>
+										<div  class="col-6 col-12-mobile">
+											<label>Alias / Apodos (Separar por ",")</label>
+  										 	<input type="text" v-model="nuevaPersona.alias" placeholder="Alias o Apodos">
+										</div>			
 										<div class="col-4 col-12-mobile">
 											<label>Tipo Doc.</label>
 											<select v-model="nuevaPersona.tipo_documento_id">
@@ -382,7 +385,6 @@
 
 						<!-- TABLA DE PERSONAS VINCULADAS -->
 						<div class="row" style="margin-top: 3em;">
-							<!-- ... resto de la tabla (se mantiene igual) ... -->
 							<div class="col-12">
 								<header><h3>Personas Vinculadas a este Expediente</h3></header>
 								<div class="results-table-container">
@@ -390,6 +392,7 @@
 										<thead>
 											<tr>
 												<th>Nombre Completo</th>
+												<th>Alias</th>
 												<th>Documento</th>
 												<th>Nacionalidad</th>
 												<th>Rol</th>
@@ -400,6 +403,10 @@
 											<tr v-for="(p, index) in personasVinculadas" :key="index">
 												<td class="uppercase" style="font-weight: 600; color: #5983b0;">
 													{{ p.primer_nombre }} {{ p.segundo_nombre }} {{ p.primer_apellido }} {{ p.segundo_apellido }}
+												</td>
+												<td> 
+													<small v-if="p.persona_aliases" style="display:block; color: #e74c3c; font-style: italic;">  ({{ p.persona_aliases }})</small>
+													<small v-else style="color: #ccc;">---</small>
 												</td>
 												<td>{{ p.documento }}</td>
 												<td class="uppercase">{{ p.nacionalidad_nombre }}</td>

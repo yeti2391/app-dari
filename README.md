@@ -181,9 +181,6 @@ La aplicación expone una API REST completa para integración con otros sistemas
 4. Push a la rama (`git push origin feature/nueva-funcionalidad`)
 5. Crear Pull Request
 
-## Licencia
-
-Este proyecto está bajo la Licencia MIT. Ver archivo `LICENSE` para más detalles.
 
 ## Soporte
 

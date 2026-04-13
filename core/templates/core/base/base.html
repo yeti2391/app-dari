@@ -167,6 +167,8 @@
 						},
 
 						async verDetalles(id) {
+							if (this.cargando) return; // Evitar múltiples llamadas
+							this.cargando = true;
 							try {
 								const response = await fetch(`/api/expediente/${id}/`);
 								const data = await response.json();
@@ -184,6 +186,7 @@
 
 								this.seccionActual = 'detalles';
 							} catch (error) { alert("Error al cargar detalles"); }
+							finally { this.cargando = false; }
 						},
 						abrirRegistroMovimiento() {
 							// Pre-configuramos el formulario de movimiento
@@ -265,7 +268,7 @@
 						// Buscamos el país
 						const paisEncontrado = this.paises.find(p => p.nombre === this.nuevaPersona.nacionalidad_nombre);
 						
-						if(this.nuevaPersona.primer_nombre && this.nuevaPersona.documento && paisEncontrado) {
+						 if(this.nuevaPersona.primer_nombre || this.nuevaPersona.alias) {
 							
 							try {
 								// ENVIAR AL BACKEND
@@ -280,34 +283,30 @@
 
 								if (response.ok) {
 									// Si el servidor guardó con éxito, actualizamos la tabla visual
-									const personaFinal = { ...this.nuevaPersona };
+									const personaFinal = { ...this.nuevaPersona,
+									 // Sincronizamos el nombre del campo para que Vue lo encuentre
+										persona_aliases: this.nuevaPersona.alias, 
+										nacionalidad_nombre: this.nuevaPersona.nacionalidad_nombre,
+										rol: this.nuevaPersona.rol
+									};
 									this.personasVinculadas.push(personaFinal);
 									
 									// Limpiar formulario
 									this.nuevaPersona = { 
 										primer_nombre: '', segundo_nombre: '', 
 										primer_apellido: '', segundo_apellido: '', 
+										alias: '',
 										tipo_documento_id: '', documento: '', 
-										nacionalidad_nombre: '', rol: 'indagado' 
+										nacionalidad_nombre: '', 
+										rol: 'indagado' 
 									};
 									
 									alert("Persona vinculada correctamente al expediente.");
-								} else {
-									alert("Error al guardar en la base de datos.");
 								}
-							} catch (error) {
-								console.error(error);
-								alert("No se pudo conectar con el servidor.");
+							} catch (error) { alert("Error de conexión"); }
+							} else {
+								alert("Ingrese al menos un Nombre o un Alias");
 							}
-
-						} else {
-							alert("Verifique: Primer Nombre, Documento y Nacionalidad válida.");
-						}
-					},
-						async cargarTiposMovimiento() {
-							const res = await fetch('/api/movimientos/tipos/');
-							const data = await res.json();
-							this.tiposMovimiento = data.tipos;
 						},
 						async buscarHistorial() {
 							const res = await fetch(`/api/movimientos/historial/?codigo=${this.nuevoMovimiento.codigo_expediente}`);
