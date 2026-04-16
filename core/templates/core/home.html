@@ -58,6 +58,10 @@
 											<tr v-for="res in resultadosPaginados" :key="res.expediente_id + '-' + res.persona_id">
 												<td class="uppercase" :style="{ color: res.persona_id ? '#5983b0' : '#ccc' }">
 													{{ res.persona_nombre }}
+													 <!-- Muestra los alias debajo del nombre en la búsqueda -->
+													<small v-if="res.persona_aliases" style="display:block; color: #e74c3c; font-style: italic; font-size: 0.7em;">
+														({{ res.persona_aliases }})
+													</small>
 												</td>
 												<td>{{ res.documento }}</td>
 												<td class="uppercase" style="font-weight: bold; color: #666;">
@@ -405,7 +409,10 @@
 													{{ p.primer_nombre }} {{ p.segundo_nombre }} {{ p.primer_apellido }} {{ p.segundo_apellido }}
 												</td>
 												<td> 
-													<small v-if="p.persona_aliases" style="display:block; color: #e74c3c; font-style: italic;">  ({{ p.persona_aliases }})</small>
+													<!-- CORRECCIÓN: Cambiamos 'res' por 'p' -->
+													<small v-if="p.persona_aliases" style="display:block; color: #e74c3c; font-style: italic;">
+														({{ p.persona_aliases }})
+													</small>
 													<small v-else style="color: #ccc;">---</small>
 												</td>
 												<td>{{ p.documento }}</td>
@@ -417,8 +424,7 @@
 													</button>
 												</td>
 											</tr>
-										</tbody>
-									</table>
+										</tbody>			
 								</div>
 							</div>
 						</div>

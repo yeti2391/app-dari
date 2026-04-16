@@ -76,9 +76,10 @@
 							nuevaPersona: {
 								primer_nombre: '', segundo_nombre: '',
 								primer_apellido: '', segundo_apellido: '',
+								alias: '',
 								tipo_documento_id: '', documento: '',
 								nacionalidad_id: '', nacionalidad_nombre: '', // para el filtro
-								rol: 'imputado'
+								rol: 'indagado'
 							},
 							personasVinculadas: [],
 							cargando: false,
@@ -120,8 +121,7 @@
 						this.cargarPaises();
 						this.cargarTiposDocumento();
 						this.cargarRecientes();
-						this.cargarTiposMovimiento();
-
+						
 					},
 
 					methods: {
