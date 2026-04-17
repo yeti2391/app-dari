@@ -73,11 +73,14 @@
 
 							paises: [],
 							tiposDocumento: [],
+							queryPersonaExistente: '',
+							resultadosSugeridos: [],
 							nuevaPersona: {
 								primer_nombre: '', segundo_nombre: '',
 								primer_apellido: '', segundo_apellido: '',
 								alias: '',
 								tipo_documento_id: '', documento: '',
+								fecha_nacimiento: '',
 								nacionalidad_id: '', nacionalidad_nombre: '', // para el filtro
 								rol: 'indagado'
 							},
@@ -298,6 +301,35 @@
 							}
 						},
 
+						// Para buscar personas antes de agregarlos a los expedientes:
+						async buscarPersonaExistente() {
+							if (this.queryPersonaExistente.length < 3) {
+								this.resultadosSugeridos = [];
+								return;
+							}
+							const response = await fetch(`/api/buscar/?q=${encodeURIComponent(this.queryPersonaExistente)}&tipo=persona`);
+							const data = await response.json();
+							this.resultadosSugeridos = data.resultados;
+						},
+						async ejecutarVinculoExistente(personaId) {
+							try {
+								const response = await fetch(`/api/expediente/${this.expediente.id}/vincular-existente/`, {
+									method: 'POST',
+									headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+									body: JSON.stringify({ 
+										persona_id: personaId,
+										rol: 'indagado' // Rol por defecto, se puede cambiar 
+									})
+								});
+								if (response.ok) {
+									alert("Persona vinculada correctamente.");
+									this.queryPersonaExistente = '';
+									this.resultadosSugeridos = [];
+									this.verDetalles(this.expediente.id); // Recargar tabla
+								}
+							} catch (error) { alert("Error al vincular"); }
+						},
+
 						// Método para el botón de agregar persona
 						async agregarPersona() {
 						// Buscamos el país
@@ -346,7 +378,7 @@
 								alert("Ingrese al menos un Nombre o un Alias");
 							}
 						},
-						
+
 						async guardarNuevoAliasPerfil() {
 							if (!this.nuevoAliasPerfil.trim()) return;
 							try {

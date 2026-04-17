@@ -456,8 +456,30 @@
 
 							<!-- Columna Derecha: Formulario de Vinculación -->
 							<div class="col-8 col-12-mobile">
+								<!-- BUSCADOR DE PERSONAS EXISTENTES -->
+								<div class="form-container" style="margin-bottom: 2em; border-bottom: 4px solid #5983b0;">
+									<h3><i class="fas fa-search-plus"></i> Vincular Persona Registrada</h3>
+									<p style="font-size: 0.7em; margin-bottom: 10px;">Busque por nombre o documento a una persona que ya esté en el sistema.</p>
+									<input type="text" v-model="$root.queryPersonaExistente" 
+										@input="$root.buscarPersonaExistente" 
+										placeholder="Escriba nombre o documento para buscar...">
+									
+									<!-- Resultados sugeridos rápidos -->
+									<div v-if="$root.resultadosSugeridos.length > 0" 
+										style="background: #fff; border: 1px solid #ddd; border-radius: 5px; margin-top: 5px; max-height: 200px; overflow-y: auto;">
+										<div v-for="res in $root.resultadosSugeridos" :key="res.persona_id" 
+											style="padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+											<div style="font-size: 0.75em;">
+												<strong class="uppercase">{{ res.persona_nombre }}</strong> 
+												<small style="display:block;">{{ res.documento }} | {{ res.nacionalidad_cod }}</small>
+											</div>
+											<button class="button small primary" style="height: 25px; line-height: 25px; padding: 0 10px;" 
+													@click="$root.ejecutarVinculoExistente(res.persona_id)">Vincular</button>
+										</div>
+									</div>
+								<!-- Formulario de Vinculación de nuevas personas-->
 								<div class="form-container">
-									<h3>Vincular Nueva Persona</h3>
+									<h3><i class="fas fa-user-plus"></i> Registrar y Vincular Nueva Persona</h3>
 									<div class="row gtr-uniform">
 										<div class="col-6 col-12-mobile">
 											<label>Primer Nombre</label>
@@ -475,10 +497,17 @@
 											<label>Segundo Apellido</label>
 											<input type="text" v-model="nuevaPersona.segundo_apellido">
 										</div>
-										<div  class="col-6 col-12-mobile">
+										
+										<!-- CAMPO AGREGADO: FECHA DE NACIMIENTO -->
+										<div class="col-6 col-12-mobile">
+											<label>Fecha de Nacimiento</label>
+											<input type="date" v-model="nuevaPersona.fecha_nacimiento">
+										</div>
+										<div class="col-6 col-12-mobile">
 											<label>Alias / Apodos (Separar por ",")</label>
-  										 	<input type="text" v-model="nuevaPersona.alias" placeholder="Alias o Apodos">
+											<input type="text" v-model="nuevaPersona.alias" placeholder="Ej: EL GORDO, PEPE">
 										</div>			
+
 										<div class="col-4 col-12-mobile">
 											<label>Tipo Doc.</label>
 											<select v-model="nuevaPersona.tipo_documento_id">
@@ -486,7 +515,7 @@
 											</select>
 										</div>
 										<div class="col-8 col-12-mobile">
-											<label>Documento</label>
+											<label>Nro. Documento</label>
 											<input type="text" v-model="nuevaPersona.documento">
 										</div>
 										<div class="col-6 col-12-mobile">

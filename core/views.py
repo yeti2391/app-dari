@@ -339,6 +339,7 @@ def vincular_persona(request, id):
                     segundo_nombre=data.get('segundo_nombre', ''),
                     primer_apellido=data.get('primer_apellido'),
                     segundo_apellido=data.get('segundo_apellido', ''),
+                    fecha_nacimiento=data.get('fecha_nacimiento') or None,
                     nacionalidad=pais
                 )
                 
@@ -390,3 +391,19 @@ def agregar_alias_persona(request, id):
             Alias.objects.get_or_create(persona=persona, alias=alias_texto)
             return JsonResponse({'status': 'ok'})
     return JsonResponse({'status': 'error'}, status=400)
+
+# Vincular una persona que YA EXISTE al expediente
+@csrf_exempt
+def vincular_persona_existente(request, id):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        expediente = get_object_or_404(Expediente, id=id)
+        persona = get_object_or_404(Persona, id=data['persona_id'])
+        
+        # Creamos el vínculo (evitando duplicados en el mismo expediente)
+        ExpedientePersona.objects.get_or_create(
+            expediente=expediente,
+            persona=persona,
+            defaults={'rol': data.get('rol', 'indagado').lower()}
+        )
+        return JsonResponse({'status': 'ok'})
