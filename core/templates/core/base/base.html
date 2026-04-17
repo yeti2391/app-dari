@@ -379,6 +379,35 @@
 							}
 						},
 
+						// Para quitar personas vinculadas a expedientes:
+						async quitarPersona(personaId) {
+							if (!confirm("¿Está seguro de que desea quitar a esta persona del expediente?")) {
+								return;
+							}
+
+							try {
+								const response = await fetch(`/api/expediente/${this.expediente.id}/desvincular/`, {
+									method: 'POST',
+									headers: {
+										'Content-Type': 'application/json',
+										'X-CSRFToken': '{{ csrf_token }}'
+									},
+									body: JSON.stringify({ persona_id: personaId })
+								});
+
+								if (response.ok) {
+									// Opción A: Refrescar toda la data desde el server (más seguro)
+									this.verDetalles(this.expediente.id);
+									alert("Persona desvinculada correctamente.");
+								} else {
+									alert("No se pudo desvincular a la persona del servidor.");
+								}
+							} catch (error) {
+								console.error(error);
+								alert("Error de conexión al intentar desvincular.");
+							}
+						},
+
 						async guardarNuevoAliasPerfil() {
 							if (!this.nuevoAliasPerfil.trim()) return;
 							try {

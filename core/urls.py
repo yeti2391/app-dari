@@ -28,6 +28,7 @@ urlpatterns = [
     # REGISTRAR PERSONAS
     path('api/expediente/<int:id>/vincular-persona/', views.vincular_persona, name='api_vincular_persona'),
     path('api/expediente/<int:id>/vincular-existente/', views.vincular_persona_existente, name='api_vincular_existente'),
+    path('api/expediente/<int:id>/desvincular/', views.desvincular_persona, name='api_desvincular_persona'),
 
     # DETALLES DE PERSONAS
     path('api/persona/<int:id>/', views.detalle_persona, name='api_detalle_persona'),

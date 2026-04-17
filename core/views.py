@@ -378,6 +378,24 @@ def vincular_persona(request, id):
             
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+@csrf_exempt
+def desvincular_persona(request, id): # 'id' es el ID del expediente
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            persona_id = data.get('persona_id')
+            
+            # Buscamos la relación en la tabla intermedia y la borramos
+            vinculo = ExpedientePersona.objects.filter(expediente_id=id, persona_id=persona_id)
+            
+            if vinculo.exists():
+                vinculo.delete()
+                return JsonResponse({'status': 'ok'})
+            else:
+                return JsonResponse({'status': 'error', 'message': 'La vinculación no existe'}, status=404)
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
         
 @csrf_exempt
 def agregar_alias_persona(request, id):

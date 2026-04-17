@@ -559,14 +559,13 @@
 											</tr>
 										</thead>
 										<tbody>
-											<tr v-for="(p, index) in personasVinculadas" :key="index">
+											<tr v-for="(p, index) in personasVinculadas" :key="p.persona_id">
 												<td class="uppercase" style="font-weight: 600; color: #5983b0;">
 													 <a href="#" @click.prevent="$root.verPerfilPersona(p.persona_id)" style="border: none; color: inherit; font-weight: 700;">
 														{{ p.primer_nombre }} {{ p.segundo_nombre }} {{ p.primer_apellido }}  {{ p.segundo_apellido }}
 													</a>
 												</td>
-												<td> 
-													<!-- CORRECCIÓN: Cambiamos 'res' por 'p' -->
+												<td> 													
 													<small v-if="p.persona_aliases" style="display:block; color: #e74c3c; font-style: italic;">
 														({{ p.persona_aliases }})
 													</small>
@@ -576,7 +575,7 @@
 												<td class="uppercase">{{ p.nacionalidad_nombre }}</td>
 												<td><span class="badge" style="font-size: 0.8em;">{{ p.rol }}</span></td>
 												<td>
-													<button class="btn-remove" @click="personasVinculadas.splice(index, 1)">
+													 <button class="btn-remove" @click="$root.quitarPersona(p.persona_id)">
 														<i class="fas fa-trash"></i> Quitar
 													</button>
 												</td>
