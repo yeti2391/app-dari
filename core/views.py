@@ -10,7 +10,7 @@ from .models import *
 def home(request):
     return render(request, 'core/home.html')
 
-# 2. Buscar 
+# 2. Buscar expedientes/personas
 def buscar_expedientes(request):
     query = request.GET.get('q', '').strip()
     tipo = request.GET.get('tipo', 'persona').strip()
@@ -19,18 +19,16 @@ def buscar_expedientes(request):
         return JsonResponse({'resultados': []})
 
     if tipo == 'persona':
-        # Buscamos coincidencias en datos de la persona vinculada
-        # icontains en Django ya es de por sí insensible a mayúsculas/minúsculas
+        # Buscamos coincidencias en datos de la persona vinculada, alias o documentos
         filtros = (
             Q(expedientepersona__persona__primer_nombre__icontains=query) |
             Q(expedientepersona__persona__segundo_nombre__icontains=query) |
             Q(expedientepersona__persona__primer_apellido__icontains=query) |
             Q(expedientepersona__persona__segundo_apellido__icontains=query) |
-            Q(expedientepersona__persona__documento__icontains=query) |
+            Q(expedientepersona__persona__identificaciones__numero__icontains=query) |
             Q(expedientepersona__persona__aliases__alias__icontains=query)
         )
     else: # tipo == 'expediente'
-        # Normalizamos la consulta para que coincida con el estándar de mayúsculas del sistema
         query_normalizada = query.upper()
         filtros = (
             Q(codigo__icontains=query_normalizada) |
@@ -39,32 +37,42 @@ def buscar_expedientes(request):
             Q(oficina__codigo__icontains=query)
         )
 
-    # Obtenemos los expedientes que coinciden con los filtros
+    # Obtenemos los expedientes únicos que coinciden con los filtros
     expedientes = Expediente.objects.filter(filtros).select_related('oficina').distinct()
 
     data = []
     for exp in expedientes:
-        # Obtenemos las personas vinculadas para cada expediente encontrado
-        vias = ExpedientePersona.objects.filter(expediente=exp).select_related('persona', 'persona__nacionalidad')
+        # Obtenemos las personas vinculadas trayendo sus alias y documentos en una sola consulta (prefetch)
+        vias = ExpedientePersona.objects.filter(expediente=exp).select_related(
+            'persona', 'persona__nacionalidad'
+        ).prefetch_related(
+            'persona__identificaciones__tipo_documento', 
+            'persona__aliases'
+        )
         
         if vias.exists():
             for v in vias:
+                # Procesamos documentos y alias de la persona
+                identificaciones = v.persona.identificaciones.all()
+                doc_string = ", ".join([f"{d.tipo_documento.nombre}: {d.numero}" for d in identificaciones]) if identificaciones else "---"
+                
+                alias_list = v.persona.aliases.all()
+                alias_string = ", ".join([a.alias for a in alias_list]) if alias_list else ""
+
                 data.append({
                     'expediente_id': exp.id,
-                    'expediente_codigo': exp.codigo, # Vendrá en mayúsculas desde la DB
+                    'expediente_codigo': exp.codigo,
                     'oficina': exp.oficina.nombre,
                     'fecha_ingreso': exp.fecha_ingreso.strftime("%d/%m/%Y"),
                     'persona_id': v.persona.id,
-                    # Concatenamos los nombres aquí para la tabla de resultados
-                    'persona_nombre': f"{v.persona.primer_nombre} {v.persona.primer_apellido}",
-                    # Unimos todos los alias en un solo string para mostrar en la tabla
-                    'persona_aliases': ", ".join([a.alias for a in v.persona.aliases.all()]),
-                    'documento': v.persona.documento,
-                    'nacionalidad_cod': v.persona.nacionalidad.codigo_alpha2 if v.persona.nacionalidad else None,
+                    'persona_nombre': f"{v.persona.primer_nombre or ''} {v.persona.primer_apellido or ''}".strip() or "SIN NOMBRE",
+                    'persona_aliases': alias_string,
+                    'documento': doc_string if doc_string else "NO REGISTRA",
+                    'nacionalidad_cod': v.persona.nacionalidad.codigo_alpha2 if v.persona.nacionalidad else '---',
                     'rol': v.get_rol_display()
                 })
         else:
-            # Si el expediente no tiene personas asociadas aún, devolvemos la fila de expediente vacía
+            # Si el expediente no tiene personas, devolvemos una fila con datos de persona vacíos
             data.append({
                 'expediente_id': exp.id,
                 'expediente_codigo': exp.codigo,
@@ -72,6 +80,7 @@ def buscar_expedientes(request):
                 'fecha_ingreso': exp.fecha_ingreso.strftime("%d/%m/%Y"),
                 'persona_id': '',
                 'persona_nombre': '--- SIN ASIGNAR ---',
+                'persona_aliases': '',
                 'documento': '---',
                 'nacionalidad_cod': '---',
                 'rol': 'N/A'
@@ -83,19 +92,34 @@ def buscar_expedientes(request):
 def detalle_expediente(request, id):
     exp = get_object_or_404(Expediente, id=id)
     
-    # Personas vinculadas
-    personas_vinculadas = ExpedientePersona.objects.filter(expediente=exp).select_related('persona', 'persona__nacionalidad').prefetch_related('persona__aliases')
+    # Traemos personas vinculadas incluyendo sus identificaciones y alias (optimizado con prefetch)
+    personas_vinculadas = ExpedientePersona.objects.filter(expediente=exp).select_related(
+        'persona', 'persona__nacionalidad'
+    ).prefetch_related(
+        'persona__identificaciones__tipo_documento', 
+        'persona__aliases'
+    )
+    
     lista_personas = []
     for vp in personas_vinculadas:
+        # 1. Calculamos el string de documentos
+        docs_list = vp.persona.identificaciones.all()
+        doc_string = ", ".join([f"{d.tipo_documento.nombre}: {d.numero}" for d in docs_list]) if docs_list else "---"
+        
+        # 2. Calculamos el string de alias
+        alias_list = vp.persona.aliases.all()
+        alias_string = ", ".join([a.alias for a in alias_list]) if alias_list else ""
+
         lista_personas.append({
-            'primer_nombre': vp.persona.primer_nombre,
+            'persona_id': vp.persona.id,
+            'primer_nombre': vp.persona.primer_nombre or '',
             'segundo_nombre': vp.persona.segundo_nombre or '',
-            'primer_apellido': vp.persona.primer_apellido,
+            'primer_apellido': vp.persona.primer_apellido or '',
             'segundo_apellido': vp.persona.segundo_apellido or '',
-            'documento': vp.persona.documento,
-            'nacionalidad_nombre': vp.persona.nacionalidad.nombre,
+            'documento': doc_string,
+            'nacionalidad_nombre': vp.persona.nacionalidad.nombre if vp.persona.nacionalidad else 'N/A',
             'rol': vp.get_rol_display(),
-            'persona_aliases': ", ".join([a.alias for a in vp.persona.aliases.all()])
+            'persona_aliases': alias_string
         })
 
     # Movimientos para el Timeline de detalles
@@ -104,9 +128,7 @@ def detalle_expediente(request, id):
     for m in movs:
         lista_movs.append({
             'fecha': m.fecha.strftime("%d/%m/%Y %H:%M"),
-            # Ruta corta para Timelines (Abreviaturas)
             'ruta_corta': f"{m.origen.codigo} → {m.destino.codigo}", 
-            # Ruta larga para Tabla Excel (Nombres completos)
             'ruta_larga': f"{m.origen.nombre} → {m.destino.nombre}",
             'entrega': m.entregado_por,
             'recibe': m.recibido_por,
@@ -161,7 +183,69 @@ def historial_movimientos(request):
         })
     return JsonResponse({'historial': data})
 
+# 4. Detalles de Personas
+# Obtener todos los datos de una persona
+def detalle_persona(request, id):
+    persona = get_object_or_404(Persona, id=id)
+    
+    # 1. Identificaciones
+    identificaciones = []
+    for i in persona.identificaciones.all().select_related('tipo_documento'):
+        identificaciones.append({
+            'id': i.id,
+            'tipo': i.tipo_documento.nombre,
+            'numero': i.numero
+        })
+    
+    # 2. Alias
+    aliases = [a.alias for a in persona.aliases.all()]
+    
+    # 3. Expedientes donde aparece
+    expedientes = []
+    vinculos = ExpedientePersona.objects.filter(persona=persona).select_related('expediente', 'expediente__oficina')
+    for v in vinculos:
+        expedientes.append({
+            'id': v.expediente.id,
+            'codigo': v.expediente.codigo,
+            'oficina': v.expediente.oficina.nombre,
+            'rol': v.get_rol_display()
+        })
+
+    return JsonResponse({
+        'id': persona.id,
+        'primer_nombre': persona.primer_nombre,
+        'segundo_nombre': persona.segundo_nombre,
+        'primer_apellido': persona.primer_apellido,
+        'segundo_apellido': persona.segundo_apellido,
+        'nacionalidad': persona.nacionalidad.nombre if persona.nacionalidad else 'N/A',
+        'identificaciones': identificaciones,
+        'aliases': aliases,
+        'expedientes': expedientes
+    })
+
+# Agregar una nueva identificación a una persona existente
+@csrf_exempt
+def agregar_identificacion_persona(request, id):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        persona = get_object_or_404(Persona, id=id)
+        tipo_doc = get_object_or_404(TipoDocumento, id=data['tipo_documento_id'])
+        
+        # Evitar duplicados
+        if Identificacion.objects.filter(tipo_documento=tipo_doc, numero=data['numero'].upper().strip()).exists():
+            return JsonResponse({'status': 'error', 'message': 'Ese documento ya está registrado.'}, status=400)
+            
+        Identificacion.objects.create(
+            persona=persona,
+            tipo_documento=tipo_doc,
+            numero=data['numero']
+        )
+        return JsonResponse({'status': 'ok'})
+
+
+
 # --- OTRAS VISTAS ---
+
 
 @csrf_exempt
 def actualizar_alfresco(request, id):
@@ -226,41 +310,83 @@ def lista_tipos_documento(request):
 @csrf_exempt
 def vincular_persona(request, id):
     if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            expediente = get_object_or_404(Expediente, id=id)
+            
+            documento_num = data.get('documento', '').strip().upper()
+            tipo_doc_id = data.get('tipo_documento_id')
+            
+            persona = None
+
+            # 1. Intentar encontrar a la persona por su identificación (si se proporcionó)
+            if documento_num and tipo_doc_id:
+                ident = Identificacion.objects.filter(
+                    numero=documento_num, 
+                    tipo_documento_id=tipo_doc_id
+                ).first()
+                if ident:
+                    persona = ident.persona
+
+            # 2. Si la persona no existe, la creamos
+            if not persona:
+                pais = None
+                if data.get('nacionalidad_nombre'):
+                    pais = Pais.objects.filter(nombre=data['nacionalidad_nombre']).first()
+                
+                persona = Persona.objects.create(
+                    primer_nombre=data.get('primer_nombre'),
+                    segundo_nombre=data.get('segundo_nombre', ''),
+                    primer_apellido=data.get('primer_apellido'),
+                    segundo_apellido=data.get('segundo_apellido', ''),
+                    nacionalidad=pais
+                )
+                
+                # Creamos su primera identificación si hay datos
+                if documento_num and tipo_doc_id:
+                    Identificacion.objects.create(
+                        persona=persona,
+                        tipo_documento_id=tipo_doc_id,
+                        numero=documento_num
+                    )
+            else:
+                # Si la persona ya existía, opcionalmente actualizamos sus nombres
+                persona.primer_nombre = data.get('primer_nombre', persona.primer_nombre)
+                persona.primer_apellido = data.get('primer_apellido', persona.primer_apellido)
+                persona.save()
+
+            # 3. Crear el vínculo con el Expediente
+            ExpedientePersona.objects.get_or_create(
+                expediente=expediente,
+                persona=persona,
+                defaults={'rol': data.get('rol', 'indagado').lower()}
+            )
+
+            # 4. Gestión de Alias (pueden ser varios separados por coma)
+            if data.get('alias'):
+                lista_alias = data['alias'].split(',')
+                for a in lista_alias:
+                    nombre_alias = a.strip().upper()
+                    if nombre_alias:
+                        Alias.objects.get_or_create(persona=persona, alias=nombre_alias)
+
+            return JsonResponse({
+                'status': 'ok',
+                'persona_id': persona.id
+                })
+            
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+        
+@csrf_exempt
+def agregar_alias_persona(request, id):
+    if request.method == 'POST':
         data = json.loads(request.body)
-        expediente = get_object_or_404(Expediente, id=id)
+        persona = get_object_or_404(Persona, id=id)
+        alias_texto = data.get('alias', '').strip().upper()
         
-        # 1. Obtener o crear la Persona
-        # Usamos update_or_create para que si la persona ya existe, solo actualice sus nombres
-        pais = Pais.objects.get(nombre=data['nacionalidad_nombre'])
-        tipo_doc = TipoDocumento.objects.get(id=data['tipo_documento_id'])
-        
-        persona, created = Persona.objects.update_or_create(
-            documento=data['documento'],
-            defaults={
-                'tipo_documento': tipo_doc,
-                'primer_nombre': data['primer_nombre'],
-                'segundo_nombre': data.get('segundo_nombre', ''),
-                'primer_apellido': data['primer_apellido'],
-                'segundo_apellido': data.get('segundo_apellido', ''),
-                'nacionalidad': pais,
-            }
-        )
-
-        # 2. Crear el vínculo en ExpedientePersona
-        ExpedientePersona.objects.get_or_create(
-            expediente=expediente,
-            persona=persona,
-            defaults={'rol': data['rol'].lower()}
-        )
-
-         # GESTIÓN DE ALIAS
-        if data.get('alias'):
-            # Separamos por comas si el usuario escribió varios
-            lista_alias = data['alias'].split(',')
-            for a in lista_alias:
-                nombre_alias = a.strip().upper()
-                if nombre_alias:
-                    Alias.objects.get_or_create(persona=persona, alias=nombre_alias)
-    
-
-        return JsonResponse({'status': 'ok'})
+        if alias_texto:
+            # Evitamos duplicados para la misma persona
+            Alias.objects.get_or_create(persona=persona, alias=alias_texto)
+            return JsonResponse({'status': 'ok'})
+    return JsonResponse({'status': 'error'}, status=400)

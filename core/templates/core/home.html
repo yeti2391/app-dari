@@ -57,13 +57,24 @@
 										<tbody>
 											<tr v-for="res in resultadosPaginados" :key="res.expediente_id + '-' + res.persona_id">
 												<td class="uppercase" :style="{ color: res.persona_id ? '#5983b0' : '#ccc' }">
-													{{ res.persona_nombre }}
+													<a href="#" @click.prevent="$root.verPerfilPersona(res.persona_id)" style="border: none; color: inherit; font-weight: 700;">
+														{{ res.persona_nombre }}
+													</a>
 													 <!-- Muestra los alias debajo del nombre en la búsqueda -->
-													<small v-if="res.persona_aliases" style="display:block; color: #e74c3c; font-style: italic; font-size: 0.7em;">
+													<small v-if="res.persona_aliases" style="display:block; font-style: italic; font-size: 0.7em;">
 														({{ res.persona_aliases }})
 													</small>
 												</td>
-												<td>{{ res.documento }}</td>
+												<td>													
+													<!-- Verificamos si existe el campo 'documento' y no es el guion por defecto -->
+													<div v-if="res.documento && res.documento !== '---' && res.documento !== 'SIN DOC'">
+														<!-- 'doc' es la variable que representa cada documento individual en el split -->
+														<small v-for="doc in res.documento.split(',')" :key="doc" style="display:block; font-size: 0.7em; line-height: 1.1; margin-bottom: 2px;">
+															{{ doc.trim() }}
+														</small>
+													</div>
+													<span v-else style="color: #ccc;">---</span>													
+												</td>
 												<td class="uppercase" style="font-weight: bold; color: #666;">
 													{{ res.nacionalidad_cod }}
 												</td>
@@ -197,7 +208,7 @@
 								<div class="row gtr-uniform">
 									<div class="col-6 col-12-mobile">
 										<label>Código Interno</label>
-										<input type="text" v-model="nuevoExpediente.codigo" required placeholder="Ej: EXP-100/24">
+										<input type="text" v-model="nuevoExpediente.codigo" required placeholder="Ej: BK001">
 									</div>
 									<div class="col-6 col-12-mobile">
 										<label>Oficina Solicitante</label>
@@ -258,6 +269,121 @@
 						</div>
 					</div>
 				</section>
+				<!-- DETALLES DE PERSONA -->
+				<section id="persona_perfil" v-show="seccionActual === 'persona_perfil'">
+					{% verbatim %}
+					<div class="container">
+						<!-- ENCABEZADO: Mantiene tu estilo original -->
+						<header>
+							<a href="#" @click.prevent="seccionActual = 'buscar'"><i class="fas fa-arrow-left"></i> Volver al buscador</a>
+							<h2 class="uppercase">{{ personaPerfil.primer_nombre }} {{ personaPerfil.primer_apellido }}</h2>
+							<p style="font-weight: 600; color: #5983b0;">
+								<i class="fas fa-globe"></i> NACIONALIDAD: {{ personaPerfil.nacionalidad }} 
+								<span style="margin: 0 15px; color: #ccc;">|</span> 
+								<i class="fas fa-user-tag"></i> ALIAS: {{ personaPerfil.aliases.join(', ') }}
+							</p>
+						</header>
+
+						<!-- PRIMERA FILA: Documentos Registrados y Participación en Expedientes -->
+						<div class="row">
+							<!-- Columna Izquierda (Pequeña): Documentos Registrados -->
+							<div class="col-4 col-12-mobile">
+								<div class="form-container" style="padding: 1.5em; margin-bottom: 2em;">
+									<h3 style="color: #273C53;"><i class="fas fa-id-card"></i> Documentos Registrados</h3>
+									<ul style="list-style: none; padding: 0; font-size: 0.85em; margin: 0;">
+										<li v-for="iden in personaPerfil.identificaciones" :key="iden.id" 
+											style="margin-bottom: 10px; padding: 8px; background: #f8f9fa; border-radius: 5px; border-left: 3px solid #5983b0;">
+											<strong>{{ iden.tipo }}:</strong> {{ iden.numero }}
+										</li>
+										<li v-if="personaPerfil.identificaciones.length === 0" style="font-style: italic; color: #888;">
+											No hay documentos cargados.
+										</li>
+									</ul>
+								</div>
+							</div>
+
+							<!-- Columna Derecha (Grande): Participación en Expedientes -->
+							<div class="col-8 col-12-mobile">
+								<div class="form-container" style="margin-bottom: 2em;">
+									<h3 style="color: #273C53;"><i class="fas fa-folder-open"></i> Participación en Expedientes</h3>
+									<div class="results-table-container">
+										<table class="results-table" style="font-size: 0.8em;">
+											<thead>
+												<tr>
+													<th>Expediente</th>
+													<th>Oficina Actual</th>
+													<th>Rol</th>
+													<th>Ver</th>
+												</tr>
+											</thead>
+											<tbody>
+												<tr v-for="ex in personaPerfil.expedientes" :key="ex.id">
+													<td style="font-weight: bold;">{{ ex.codigo }}</td>
+													<td>{{ ex.oficina }}</td>
+													<td><span class="badge" style="font-size: 0.8em;">{{ ex.rol }}</span></td>
+													<td>
+														<button @click="$root.verDetalles(ex.id)" class="button small icon solid fa-eye" style="padding: 0 10px; height: 30px; line-height: 30px;"></button>
+													</td>
+												</tr>
+											</tbody>
+										</table>
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<!-- SEGUNDA FILA: Gestión de Alias y Agregar Documento -->
+						<div class="row">
+							<!-- Columna Izquierda (Pequeña): Gestión de Alias -->
+							<div class="col-4 col-12-mobile">
+								<div class="form-container" style="padding: 1.5em; margin-bottom: 2em;">
+									<h3 style="color: #273C53;"><i class="fas fa-user-edit"></i> Gestión de Alias</h3>
+									<div class="row gtr-uniform">
+										<div class="col-12">
+											<input type="text" v-model="$root.nuevoAliasPerfil" placeholder="Nuevo apodo..." @keyup.enter="$root.guardarNuevoAliasPerfil()">
+										</div>
+										<div class="col-12">
+											<button class="button small fit" @click="$root.guardarNuevoAliasPerfil()">Agregar Alias</button>
+										</div>
+									</div>
+									<!-- Lista de badges de alias -->
+									<div style="margin-top: 15px; display: flex; flex-wrap: wrap; gap: 5px;">
+										<span v-for="a in personaPerfil.aliases" :key="a" class="badge" style="border-radius: 20px; font-size: 0.6em; padding: 2px 10px;">
+											{{ a }}
+										</span>
+									</div>
+								</div>
+							</div>
+
+							<!-- Columna Derecha (Grande): Agregar Documento -->
+							<div class="col-8 col-12-mobile">
+								<div class="form-container" style="margin-bottom: 2em;">
+									<h3 style="color: #273C53;"><i class="fas fa-plus-circle"></i> Agregar Documento</h3>
+									<div class="row gtr-uniform aln-bottom">
+										<div class="col-4 col-12-mobile">
+											<label>Tipo de Documento</label>
+											<select v-model="$root.nuevoDocPerfil.tipo_documento_id">
+												<option value="">Seleccionar...</option>
+												<option v-for="t in $root.tiposDocumento" :key="t.id" :value="t.id">{{ t.nombre }}</option>
+											</select>
+										</div>
+										<div class="col-5 col-12-mobile">
+											<label>Número de Identificación</label>
+											<input type="text" v-model="$root.nuevoDocPerfil.numero" placeholder="Ej: 1.234.567-8">
+										</div>
+										<div class="col-3 col-12-mobile">
+											<button class="button primary small fit" @click="$root.guardarNuevoDocPerfil()">
+												<i class="fas fa-save"></i> Guardar
+											</button>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					{% endverbatim %}
+				</section>
+
 
 				<!-- DETALLES DEL EXPEDIENTE -->
 				<section id="detalles" v-show="seccionActual === 'detalles'">
@@ -406,7 +532,9 @@
 										<tbody>
 											<tr v-for="(p, index) in personasVinculadas" :key="index">
 												<td class="uppercase" style="font-weight: 600; color: #5983b0;">
-													{{ p.primer_nombre }} {{ p.segundo_nombre }} {{ p.primer_apellido }} {{ p.segundo_apellido }}
+													 <a href="#" @click.prevent="$root.verPerfilPersona(p.persona_id)" style="border: none; color: inherit; font-weight: 700;">
+														{{ p.primer_nombre }} {{ p.segundo_nombre }} {{ p.primer_apellido }}  {{ p.segundo_apellido }}
+													</a>
 												</td>
 												<td> 
 													<!-- CORRECCIÓN: Cambiamos 'res' por 'p' -->

@@ -81,8 +81,17 @@
 								nacionalidad_id: '', nacionalidad_nombre: '', // para el filtro
 								rol: 'indagado'
 							},
+							nuevoAliasPerfil: '',
 							personasVinculadas: [],
 							cargando: false,
+							
+							// DETALLES DE PERSONA
+							personaPerfil: {
+								identificaciones: [],
+								expedientes: [],
+								aliases: []
+							},
+							nuevoDocPerfil: { tipo_documento_id: '', numero: '' },
 
 							//para movimientos de expedientes:
 							// En data()
@@ -131,6 +140,32 @@
 								const data = await response.json();
 								this.oficinas = data.oficinas;
 							} catch (e) { console.error("Error cargando oficinas"); }
+						},
+
+						async verPerfilPersona(id) {
+							try {
+								const response = await fetch(`/api/persona/${id}/`);
+								this.personaPerfil = await response.json();
+								this.seccionActual = 'persona_perfil';
+							} catch (error) { alert("Error al cargar perfil"); }
+						},
+
+						async guardarNuevoDocPerfil() {
+							try {
+								const response = await fetch(`/api/persona/${this.personaPerfil.id}/identificacion/`, {
+									method: 'POST',
+									headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+									body: JSON.stringify(this.nuevoDocPerfil)
+								});
+								if (response.ok) {
+									alert("Documento agregado");
+									this.verPerfilPersona(this.personaPerfil.id); // Recargar
+									this.nuevoDocPerfil = { tipo_documento_id: '', numero: '' };
+								} else {
+									const data = await response.json();
+									alert(data.message);
+								}
+							} catch (error) { alert("Error de conexión"); }
 						},
 
 						async buscar() {
@@ -282,9 +317,12 @@
 								});
 
 								if (response.ok) {
+									const data = await response.json(); // <--- LEEMOS LA RESPUESTA DEL SERVER
+
 									// Si el servidor guardó con éxito, actualizamos la tabla visual
 									const personaFinal = { ...this.nuevaPersona,
-									 // Sincronizamos el nombre del campo para que Vue lo encuentre
+										persona_id: data.persona_id, // <--- GUARDAMOS EL ID QUE NOS DIO EL SERVER
+									 	// Sincronizamos el nombre del campo para que Vue lo encuentre
 										persona_aliases: this.nuevaPersona.alias, 
 										nacionalidad_nombre: this.nuevaPersona.nacionalidad_nombre,
 										rol: this.nuevaPersona.rol
@@ -308,6 +346,22 @@
 								alert("Ingrese al menos un Nombre o un Alias");
 							}
 						},
+						
+						async guardarNuevoAliasPerfil() {
+							if (!this.nuevoAliasPerfil.trim()) return;
+							try {
+								const response = await fetch(`/api/persona/${this.personaPerfil.id}/alias/`, {
+									method: 'POST',
+									headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+									body: JSON.stringify({ alias: this.nuevoAliasPerfil })
+								});
+								if (response.ok) {
+									this.verPerfilPersona(this.personaPerfil.id); // Recargar perfil
+									this.nuevoAliasPerfil = ''; // Limpiar input
+								}
+							} catch (error) { alert("Error al guardar alias"); }
+						},
+
 						async buscarHistorial() {
 							const res = await fetch(`/api/movimientos/historial/?codigo=${this.nuevoMovimiento.codigo_expediente}`);
 						const data = await res.json();

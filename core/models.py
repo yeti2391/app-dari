@@ -36,37 +36,23 @@ class Oficina(models.Model):
 
 
 class Persona(models.Model):
-    documento = models.CharField(max_length=20, blank=True, null=True)
-    tipo_documento = models.ForeignKey(TipoDocumento, on_delete=models.PROTECT, blank=True, null=True)
-    
     # Todos los nombres son opcionales para soportar registros parciales o solo por Alias
     primer_nombre = models.CharField(max_length=100, blank=True, null=True)
     segundo_nombre = models.CharField(max_length=100, blank=True, null=True)
     primer_apellido = models.CharField(max_length=100, blank=True, null=True)
     segundo_apellido = models.CharField(max_length=100, blank=True, null=True)
-    
     fecha_nacimiento = models.DateField(null=True, blank=True)
     nacionalidad = models.ForeignKey(Pais, on_delete=models.PROTECT, blank=True, null=True)
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
 
-    class Meta:
-        # Permite que el par (documento, tipo) sea único, 
-        # PostgreSQL permitirá múltiples nulos aquí sin conflicto.
-        unique_together = ('documento', 'tipo_documento')
-
     def __str__(self):
-        # Intentamos armar el nombre legal
-        nombre_completo = f"{self.primer_nombre or ''} {self.primer_apellido or ''}".strip()
-        if nombre_completo:
-            return nombre_completo
-        
-        # Si no hay nombre, intentamos mostrar el primer alias que encontremos
-        # Usamos .first() gracias al related_name='aliases' de la clase Alias
-        primer_alias = self.aliases.first()
-        if primer_alias:
-            return f"ALIAS: {primer_alias.alias}"
-            
-        return f"Persona ID: {self.id} (Sin datos filiatorios)"
+        # Intentamos armar el nombre
+        nombre = f"{self.primer_nombre or ''} {self.primer_apellido or ''}".strip()
+        if not nombre:
+            # Si no hay nombre, intentamos mostrar el primer alias
+            p_alias = self.aliases.first()
+            return f"ALIAS: {p_alias.alias}" if p_alias else f"ID: {self.id}"
+        return nombre
 
     def save(self, *args, **kwargs):
         # Normalizamos TODOS los campos de texto a Mayúsculas automáticamente
@@ -76,6 +62,20 @@ class Persona(models.Model):
         if self.segundo_apellido: self.segundo_apellido = self.segundo_apellido.upper().strip()
         super(Persona, self).save(*args, **kwargs)
 
+class Identificacion(models.Model):
+    persona = models.ForeignKey(Persona, on_delete=models.CASCADE, related_name='identificaciones')
+    tipo_documento = models.ForeignKey(TipoDocumento, on_delete=models.PROTECT)
+    numero = models.CharField(max_length=50)
+
+    class Meta:
+        # Un mismo número de un mismo tipo no puede repetirse en el sistema
+        unique_together = ('tipo_documento', 'numero')
+
+    def save(self, *args, **kwargs):
+        if self.numero:
+            self.numero = self.numero.upper().strip()
+        super().save(*args, **kwargs)
+        
 class Alias(models.Model):
     # 'related_name' permite acceder desde Persona como persona.aliases.all()
     persona = models.ForeignKey(Persona, on_delete=models.CASCADE, related_name='aliases')
