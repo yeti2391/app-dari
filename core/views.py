@@ -5,12 +5,25 @@ from django.db.models import Q, F, Value
 from django.db.models.functions import Concat
 import json
 from .models import *
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.core.exceptions import PermissionDenied
+
+# Función que verifica si es del grupo DARI
+def es_dari(user):
+    if user.groups.filter(name='DARI').exists() or user.is_superuser:
+        return True
+    raise PermissionDenied
+
 
 # 1. Vista principal
+@login_required
+@user_passes_test(es_dari)
 def home(request):
     return render(request, 'core/home.html')
 
 # 2. Buscar expedientes/personas
+@login_required
+@user_passes_test(es_dari)
 def buscar_expedientes(request):
     # 1. Capturamos los parámetros de control
     query_general = request.GET.get('q', '').strip()
@@ -116,6 +129,8 @@ def buscar_expedientes(request):
     return JsonResponse({'resultados': data})
 
 # 3. Detalles del expediente
+@login_required
+@user_passes_test(es_dari)
 def detalle_expediente(request, id):
     exp = get_object_or_404(Expediente, id=id)
     
@@ -174,6 +189,8 @@ def detalle_expediente(request, id):
         'movimientos': lista_movs
     })
 
+@login_required
+@user_passes_test(es_dari)
 @csrf_exempt
 def registrar_movimiento(request):
     if request.method == 'POST':
@@ -198,6 +215,8 @@ def registrar_movimiento(request):
 
         return JsonResponse({'status': 'ok'})
 
+@login_required
+@user_passes_test(es_dari)
 def historial_movimientos(request):
     codigo = request.GET.get('codigo')
     movs = ExpedienteMovimiento.objects.filter(expediente__codigo=codigo).select_related('origen', 'destino').order_by('-fecha')
@@ -215,6 +234,8 @@ def historial_movimientos(request):
 
 # 4. Detalles de Personas
 # Obtener todos los datos de una persona
+@login_required
+@user_passes_test(es_dari)
 def detalle_persona(request, id):
     persona = get_object_or_404(Persona, id=id)
     
@@ -254,6 +275,8 @@ def detalle_persona(request, id):
     })
 
 # Agregar una nueva identificación a una persona existente
+@login_required
+@user_passes_test(es_dari)
 @csrf_exempt
 def agregar_identificacion_persona(request, id):
     if request.method == 'POST':
@@ -276,7 +299,8 @@ def agregar_identificacion_persona(request, id):
 
 # --- OTRAS VISTAS ---
 
-
+@login_required
+@user_passes_test(es_dari)
 @csrf_exempt
 def actualizar_alfresco(request, id):
     if request.method == 'POST':
@@ -286,6 +310,8 @@ def actualizar_alfresco(request, id):
         exp.save()
         return JsonResponse({'status': 'ok'})
 
+@login_required
+@user_passes_test(es_dari)
 @csrf_exempt
 def crear_expediente(request):
     if request.method == 'POST':
@@ -313,6 +339,8 @@ def crear_expediente(request):
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
+@login_required
+@user_passes_test(es_dari)
 def expedientes_recientes(request):
     recientes = Expediente.objects.all().order_by('-id')[:10]
     data = []
@@ -337,6 +365,8 @@ def lista_tipos_documento(request):
     tipos = TipoDocumento.objects.all().values('id', 'nombre')
     return JsonResponse({'tipos': list(tipos)})
 
+@login_required
+@user_passes_test(es_dari)
 @csrf_exempt
 def vincular_persona(request, id):
     if request.method == 'POST':
@@ -409,6 +439,8 @@ def vincular_persona(request, id):
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
+@login_required
+@user_passes_test(es_dari)
 @csrf_exempt
 def desvincular_persona(request, id): # 'id' es el ID del expediente
     if request.method == 'POST':
@@ -426,7 +458,9 @@ def desvincular_persona(request, id): # 'id' es el ID del expediente
                 return JsonResponse({'status': 'error', 'message': 'La vinculación no existe'}, status=404)
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
-        
+
+@login_required
+@user_passes_test(es_dari)       
 @csrf_exempt
 def agregar_alias_persona(request, id):
     if request.method == 'POST':
@@ -441,6 +475,8 @@ def agregar_alias_persona(request, id):
     return JsonResponse({'status': 'error'}, status=400)
 
 # Vincular una persona que YA EXISTE al expediente
+@login_required
+@user_passes_test(es_dari)
 @csrf_exempt
 def vincular_persona_existente(request, id):
     if request.method == 'POST':

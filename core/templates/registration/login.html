@@ -1,0 +1,28 @@
+{% extends "core/base/base.html" %}
+{% block title %}Iniciar Sesión - DARI{% endblock %}
+
+{% block body %}
+<div id="main" style="margin-left: 0;"> <!-- Quitamos el margen del sidebar para el login -->
+    <section id="login">
+        <div class="container" style="max-width: 400px;">
+            <header><h2>Acceso al Sistema</h2></header>
+            <div class="form-container">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="row gtr-uniform">
+                        <div class="col-12">
+                            <input type="text" name="username" placeholder="Usuario" required>
+                        </div>
+                        <div class="col-12">
+                            <input type="password" name="password" placeholder="Contraseña" required>
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="button primary fit">Entrar</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}

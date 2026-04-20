@@ -17,6 +17,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # La clave secreta se lee desde el .env
 SECRET_KEY = os.getenv('SECRET_KEY')
 
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'login_success' # Apunta a la vista que creamos arriba
+LOGOUT_REDIRECT_URL = 'login'
+
 # Application definition
 
 INSTALLED_APPS = [

@@ -18,11 +18,17 @@
 	<body class="is-preload">
 		<!-- envolvemos todo en app para darle control a vue -->
          <div id="app" v-cloak>
-			{% include './snippets/navbar.html' %}
+			{% if user.is_authenticated %}
+				{% include './snippets/navbar.html' %}
+			{% endif %}
 			
-			{% block body %}{% endblock %}
+			<div id="main" {% if not user.is_authenticated %}style="margin-left: 0;"{% endif %}>
+				{% block body %}{% endblock %}
+			</div>
 
-			{% include './snippets/footer.html' %}
+			{% if user.is_authenticated %}
+				{% include './snippets/footer.html' %}
+			{% endif %}
 		</div>
 		
 
@@ -149,7 +155,7 @@
 					methods: {
 						async cargarOficinas() {
 							try {
-								const response = await fetch('/api/oficinas/');
+								const response = await fetch('/DARI/api/oficinas/');
 								const data = await response.json();
 								this.oficinas = data.oficinas;
 							} catch (e) { console.error("Error cargando oficinas"); }
@@ -157,7 +163,7 @@
 
 						async verPerfilPersona(id) {
 							try {
-								const response = await fetch(`/api/persona/${id}/`);
+								const response = await fetch(`/DARI/api/persona/${id}/`);
 								this.personaPerfil = await response.json();
 								this.seccionActual = 'persona_perfil';
 							} catch (error) { alert("Error al cargar perfil"); }
@@ -165,7 +171,7 @@
 
 						async guardarNuevoDocPerfil() {
 							try {
-								const response = await fetch(`/api/persona/${this.personaPerfil.id}/identificacion/`, {
+								const response = await fetch(`/DARI/api/persona/${this.personaPerfil.id}/identificacion/`, {
 									method: 'POST',
 									headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
 									body: JSON.stringify(this.nuevoDocPerfil)
@@ -190,7 +196,7 @@
 							this.filtrosPersona = { nombre1: '', nombre2: '', apellido1: '', apellido2: '', documento: '', alias: '' };
 							
 							try {
-								const url = `/api/buscar/?tipo=${this.tipoBusqueda}&q=${encodeURIComponent(this.queryBusqueda)}&mode=quick`;
+								const url = `/DARI/api/buscar/?tipo=${this.tipoBusqueda}&q=${encodeURIComponent(this.queryBusqueda)}&mode=quick`;
 								const response = await fetch(url);
 								const data = await response.json();
 								this.resultados = data.resultados;
@@ -205,7 +211,7 @@
 							this.queryBusqueda = ''; // Limpiamos la búsqueda general
 							
 							try {
-								let url = `/api/buscar/?tipo=persona&mode=advanced`;
+								let url = `/DARI/api/buscar/?tipo=persona&mode=advanced`;
 								url += `&n1=${encodeURIComponent(this.filtrosPersona.nombre1)}` +
 									`&n2=${encodeURIComponent(this.filtrosPersona.nombre2)}` +
 									`&a1=${encodeURIComponent(this.filtrosPersona.apellido1)}` +
@@ -221,12 +227,12 @@
 						},
 						
 						async cargarPaises() {
-							const res = await fetch('/api/paises/');
+							const res = await fetch('/DARI/api/paises/');
 							const data = await res.json();
 							this.paises = data.paises;
 						},
 						async cargarTiposDocumento() {
-							const res = await fetch('/api/tipos-documento/');
+							const res = await fetch('/DARI/api/tipos-documento/');
 							const data = await res.json();
 							this.tiposDocumento = data.tipos;
 						},
@@ -235,7 +241,7 @@
 							if (this.cargando) return; // Evitar múltiples llamadas
 							this.cargando = true;
 							try {
-								const response = await fetch(`/api/expediente/${id}/`);
+								const response = await fetch(`/DARI/api/expediente/${id}/`);
 								const data = await response.json();
 								this.expediente = data;
 								this.personasVinculadas = data.personas;
@@ -268,7 +274,7 @@
 						},
 
 						async guardarMovimiento() {
-							const res = await fetch('/api/movimientos/registrar/', {
+							const res = await fetch('/DARI/api/movimientos/registrar/', {
 								method: 'POST',
 								headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
 								body: JSON.stringify(this.nuevoMovimiento)
@@ -281,7 +287,7 @@
 
 					async guardarCambioAlfresco() {
 							try {
-								const response = await fetch(`/api/expediente/${this.expediente.id}/alfresco/`, {
+								const response = await fetch(`/DARI/api/expediente/${this.expediente.id}/alfresco/`, {
 									method: 'POST',
 									headers: {
 										'Content-Type': 'application/json',
@@ -296,14 +302,14 @@
 						},
 
 						async cargarRecientes() {
-							const res = await fetch('/api/recientes/');
+							const res = await fetch('/DARI/api/recientes/');
 							const data = await res.json();
 							this.expedientesRecientes = data.recientes;
 						},
 
 						async guardarNuevoExpediente() {
 							try {
-								const response = await fetch('/api/expediente/crear/', {
+								const response = await fetch('/DARI/api/expediente/crear/', {
 									method: 'POST',
 									headers: {
 										'Content-Type': 'application/json',
@@ -334,13 +340,13 @@
 								this.resultadosSugeridos = [];
 								return;
 							}
-							const response = await fetch(`/api/buscar/?q=${encodeURIComponent(this.queryPersonaExistente)}&tipo=persona`);
+							const response = await fetch(`/DARI/api/buscar/?q=${encodeURIComponent(this.queryPersonaExistente)}&tipo=persona`);
 							const data = await response.json();
 							this.resultadosSugeridos = data.resultados;
 						},
 						async ejecutarVinculoExistente(personaId) {
 							try {
-								const response = await fetch(`/api/expediente/${this.expediente.id}/vincular-existente/`, {
+								const response = await fetch(`/DARI/api/expediente/${this.expediente.id}/vincular-existente/`, {
 									method: 'POST',
 									headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
 									body: JSON.stringify({ 
@@ -366,7 +372,7 @@
 							
 							try {
 								// ENVIAR AL BACKEND
-								const response = await fetch(`/api/expediente/${this.expediente.id}/vincular-persona/`, {
+								const response = await fetch(`/DARI/api/expediente/${this.expediente.id}/vincular-persona/`, {
 									method: 'POST',
 									headers: {
 										'Content-Type': 'application/json',
@@ -415,7 +421,7 @@
 							}
 
 							try {
-								const response = await fetch(`/api/expediente/${this.expediente.id}/desvincular/`, {
+								const response = await fetch(`/DARI/api/expediente/${this.expediente.id}/desvincular/`, {
 									method: 'POST',
 									headers: {
 										'Content-Type': 'application/json',
@@ -440,7 +446,7 @@
 						async guardarNuevoAliasPerfil() {
 							if (!this.nuevoAliasPerfil.trim()) return;
 							try {
-								const response = await fetch(`/api/persona/${this.personaPerfil.id}/alias/`, {
+								const response = await fetch(`/DARI/api/persona/${this.personaPerfil.id}/alias/`, {
 									method: 'POST',
 									headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
 									body: JSON.stringify({ alias: this.nuevoAliasPerfil })
@@ -453,7 +459,7 @@
 						},
 
 						async buscarHistorial() {
-							const res = await fetch(`/api/movimientos/historial/?codigo=${this.nuevoMovimiento.codigo_expediente}`);
+							const res = await fetch(`/DARI/api/movimientos/historial/?codigo=${this.nuevoMovimiento.codigo_expediente}`);
 						const data = await res.json();
 						this.historialBusqueda = data.historial;
 					}

@@ -16,9 +16,27 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.shortcuts import redirect
 
+# Vista rápida para redirigir según el grupo al loguearse
+def login_success(request):
+    if request.user.groups.filter(name='DARI').exists():
+        return redirect('/DARI/')
+    elif request.user.groups.filter(name='DRBPA').exists():
+        return redirect('/DRBPA/')
+    else:
+        return redirect('/admin/') # O una página de "Sin Permiso"
+    
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('', include('core.urls')),
+     path('admin/', admin.site.urls),    
+    # Rutas de autenticación (login, logout)
+    path('accounts/', include('django.contrib.auth.urls')),    
+    # Redirección inteligente tras el login
+    path('login-success/', login_success, name='login_success'),
+    # APPS POR DEPARTAMENTO
+    path('DARI/', include('core.urls')),
+    # path('DRBPA/', include('drbpa.urls')), # Futura app    
+    # Si alguien entra a la raíz, mandarlo al login
+    path('', lambda req: redirect('login')),
 
 ]
