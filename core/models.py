@@ -44,6 +44,8 @@ class Persona(models.Model):
     fecha_nacimiento = models.DateField(null=True, blank=True)
     nacionalidad = models.ForeignKey(Pais, on_delete=models.PROTECT, blank=True, null=True)
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    # CAMPO AUXILIAR PARA PODER VINCULAR PERSONAS EN BD VIEJAS CON EXP
+    id_origen = models.CharField(max_length=50, null=True, db_index=True)
 
     def __str__(self):
         # Intentamos armar el nombre

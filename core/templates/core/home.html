@@ -1,713 +1,428 @@
 {% extends "core/base/base.html" %}
 
-{% block title %}DARI{% endblock %}
+{% block title %}DARI - Sistema de Gestión{% endblock %}
 
 {% block body %}
 
-		<!-- Main -->
-			<div id="main">
+<div id="main">
 
-				<!-- Buscar -->
-					<section id="buscar" v-show="seccionActual === 'buscar'">
-						<div class="container">
-							<header><h2>Buscador del Archivo</h2></header>
-							
-							<div class="form-container">
-								<form @submit.prevent="buscar">
-									<!-- Selector de Tipo Moderno -->
-									<div class="search-type-selector">
-										<label title="Búsqueda por datos personales">
-											<input type="radio" v-model="tipoBusqueda" value="persona">
-											<span><i class="fas fa-user"></i> PERSONA</span>
-										</label>
-										<label title="Búsqueda por datos del expediente">
-											<input type="radio" v-model="tipoBusqueda" value="expediente">
-											<span><i class="fas fa-folder"></i> EXPEDIENTE</span>
-										</label>
-									</div>
+    <!-- 1. SECCIÓN: BUSCAR -->
+    <section id="buscar" v-show="seccionActual === 'buscar'">
+        <div class="container">
+            <header><h2>Buscador del Archivo</h2></header>
+            
+            <div class="form-container">
+                <form @submit.prevent="buscar">
+                    <!-- Selector de Tipo Persona / Expediente -->
+                    <div class="search-type-selector">
+                        <label title="Búsqueda por datos personales">
+                            <input type="radio" v-model="tipoBusqueda" value="persona">
+                            <span><i class="fas fa-user"></i> PERSONA</span>
+                        </label>
+                        <label title="Búsqueda por datos del expediente">
+                            <input type="radio" v-model="tipoBusqueda" value="expediente">
+                            <span><i class="fas fa-folder"></i> EXPEDIENTE</span>
+                        </label>
+                    </div>
 
-									<div class="row gtr-uniform">
-										<div class="col-9 col-12-mobile">
-											<input type="text" v-model="queryBusqueda" 
-												:placeholder="tipoBusqueda === 'persona' ? 'Nombre, Apellido, Alias o Documento...' : 'Código de Exp, Oficina u Observaciones...'" />
-										</div>
-										<div class="col-3 col-12-mobile">
-											<button type="submit" class="button fit icon solid fa-search">Buscar</button>
-										</div>
-									</div>
-								</form>
-							</div>
+                    <!-- BLOQUE Búsqueda General -->
+                    <div class="row gtr-uniform">
+                        <div class="col-9 col-12-mobile">
+                            <input type="text" v-model="queryBusqueda" 
+                                :placeholder="tipoBusqueda === 'persona' ? 'Búsqueda general (Nombre, Apellido, Alias...)' : 'Código de Exp, Oficina u Observaciones...'" />
+                        </div>
+                        <div class="col-3 col-12-mobile">
+                            <button type="submit" class="button fit primary icon solid fa-search">Buscar</button>
+                        </div>
+                    </div>
 
-							<!-- LISTADO DE RESULTADOS (RESTAURADO) -->
-							<div v-if="resultados.length > 0" style="margin-top: 3em;">
-								<div class="results-table-container">
-									<table class="results-table">
-										<thead>
-											<tr>
-												<th>Persona Vinculada</th>
-												<th>Documento</th>
-												<th>Nac.</th>
-												<th>Rol</th>
-												<th>Expediente</th>
-												<th>Oficina Actual</th>
-												<th>Ver</th>
-											</tr>
-										</thead>
-										{% verbatim %}
-										<tbody>
-											<tr v-for="res in resultadosPaginados" :key="res.expediente_id + '-' + res.persona_id">
-												<td class="uppercase" :style="{ color: res.persona_id ? '#5983b0' : '#ccc' }">
-													<a href="#" @click.prevent="$root.verPerfilPersona(res.persona_id)" style="border: none; color: inherit; font-weight: 700;">
-														{{ res.persona_nombre }}
-													</a>
-													 <!-- Muestra los alias debajo del nombre en la búsqueda -->
-													<small v-if="res.persona_aliases" style="display:block; font-style: italic; font-size: 0.7em;">
-														({{ res.persona_aliases }})
-													</small>
-												</td>
-												<td>													
-													<!-- Verificamos si existe el campo 'documento' y no es el guion por defecto -->
-													<div v-if="res.documento && res.documento !== '---' && res.documento !== 'SIN DOC'">
-														<!-- 'doc' es la variable que representa cada documento individual en el split -->
-														<small v-for="doc in res.documento.split(',')" :key="doc" style="display:block; font-size: 0.7em; line-height: 1.1; margin-bottom: 2px;">
-															{{ doc.trim() }}
-														</small>
-													</div>
-													<span v-else style="color: #ccc;">---</span>													
-												</td>
-												<td class="uppercase" style="font-weight: bold; color: #666;">
-													{{ res.nacionalidad_cod }}
-												</td>
-												<td>
-													<span class="badge" style="font-size: 0.7em; padding: 2px 8px;">{{ res.rol }}</span>
-												</td>
-												<td class="uppercase" style="font-weight: bold;">{{ res.expediente_codigo }}</td>
-												<td>{{ res.oficina }}</td>
-												<td>
-													<button @click="$root.verDetalles(res.expediente_id)" class="button small" style="padding: 0 10px; height: 30px; line-height: 30px;">
-														<i class="fas fa-eye"></i>
-													</button>
-												</td>
-											</tr>
-										</tbody>
-										{% endverbatim %}
-									</table>
-								</div>
-
-								<!-- Paginación -->
-								<div class="pagination" v-if="totalPaginas > 1">
-									<button class="button alt small" :disabled="paginaActual === 1" @click="paginaActual--">Anterior</button>
-									<span style="align-self: center; font-size: 0.8em;">Página {{ paginaActual }} de {{ totalPaginas }}</span>
-									<button class="button alt small" :disabled="paginaActual === totalPaginas" @click="paginaActual++">Siguiente</button>
-								</div>
-								
-								<p style="text-align: right; font-size: 0.7em; margin-top: 10px;">
-									Registros encontrados: {{ resultados.length }}
-								</p>
-							</div>
-
-							<p v-else-if="!cargando && queryBusqueda" style="margin-top: 2em; text-align: center;">
-								No se encontraron resultados para la búsqueda solicitada.
-							</p>
+                    <!-- BLOQUE Filtros Dirigidos (Solo visibles para Persona) -->
+                    <div v-if="tipoBusqueda === 'persona'" style="margin-top: 30px; padding-top: 30px; border-top: 2px solid #5983b0;">
+					<p style="font-size: 0.8em; font-weight: bold; color: #5983b0; margin-bottom: 15px;">
+						<i class="fas fa-filter"></i> BÚSQUEDA AVANZADA (Filtros Dirigidos)
+					</p>
+					
+					<div class="row gtr-uniform">
+						<!-- Fila 1: Nombres -->
+						<div class="col-6 col-12-mobile">
+							<label style="font-size: 0.6em;">1er Nombre</label>
+							<input type="text" v-model="filtrosPersona.nombre1" placeholder="Ej: JUAN">
 						</div>
-					</section>
-
-				<!-- Movimientos de expedientes -->
-				<section id="movimientos" v-show="seccionActual === 'movimientos'">
-					<div class="container">
-						<header><h2>Traspaso de Expedientes</h2></header>
-
-						<div class="form-container">
-							<form @submit.prevent="guardarMovimiento">
-								<div class="row gtr-uniform">
-									<div class="col-4 col-12-mobile">
-										<label>Expediente (Código)</label>
-										<input type="text" v-model="nuevoMovimiento.codigo_expediente" placeholder="Ej: BJ91">
-									</div>
-									<div class="col-4 col-12-mobile">
-										<label>Fecha y Hora del Traspaso</label>
-										<input type="datetime-local" v-model="nuevoMovimiento.fecha">
-									</div>
-									<div class="col-4 col-12-mobile" style="display: flex; align-items: flex-end;">
-										<button type="button" class="button alt small fit" @click="buscarHistorial">Ver Historial Actual</button>
-									</div>
-
-									<!-- Flujo de Oficinas -->
-									<div class="col-6 col-12-mobile">
-										<label><i class="fas fa-sign-out-alt"></i> Oficina de Origen (Sale de:)</label>
-										<select v-model="nuevoMovimiento.origen_id">
-											<option v-for="o in oficinas" :value="o.id">{% verbatim %}{{ o.nombre }}{% endverbatim %}</option>
-										</select>
-									</div>
-									<div class="col-6 col-12-mobile">
-										<label><i class="fas fa-sign-in-alt"></i> Oficina de Destino (Hacia:)</label>
-										<select v-model="nuevoMovimiento.destino_id">
-											<option v-for="o in oficinas" :value="o.id">{% verbatim %}{{ o.nombre }}{% endverbatim %}</option>
-										</select>
-									</div>
-
-									<!-- Responsables -->
-									<div class="col-6 col-12-mobile">
-										<label>Entregado por (Nombre completo)</label>
-										<input type="text" v-model="nuevoMovimiento.entregado_por">
-									</div>
-									<div class="col-6 col-12-mobile">
-										<label>Recibido por (Nombre completo)</label>
-										<input type="text" v-model="nuevoMovimiento.recibido_por">
-									</div>
-
-									<div class="col-12">
-										<label>Detalles del Traspaso (Folios, Tomos, Notas adicionales)</label>
-										<textarea v-model="nuevoMovimiento.observaciones" rows="3"></textarea>
-									</div>
-									
-									<div class="col-12">
-										<button type="submit" class="button primary fit">Registrar Traspaso</button>
-									</div>
-								</div>
-							</form>
+						<div class="col-6 col-12-mobile">
+							<label style="font-size: 0.6em;">2do Nombre</label>
+							<input type="text" v-model="filtrosPersona.nombre2" placeholder="Ej: CARLOS">
 						</div>
 
-						<!-- HISTORIAL VISUAL -->
-						<div style="margin-top: 4em;" v-if="historialBusqueda.length > 0">
-							<header><h3>Ruta de Traslados - Expediente {% verbatim %}{{ nuevoMovimiento.codigo_expediente }}{% endverbatim %}</h3></header>
-							<div class="timeline">
-								{% verbatim %}
-								<div class="timeline-item" v-for="h in historialBusqueda">
-									<div class="timeline-dot"></div>
-									<div class="timeline-content" style="border-left: 4px solid #5983b0;">
-										<span class="timeline-date">{{ h.fecha }}</span>
-										<div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-											<span class="badge" style="background: #eef4fa; color: #273C53;">{{ h.origen }}</span>
-											<i class="fas fa-long-arrow-alt-right"></i>
-											<span class="badge" style="background: #273C53; color: white;">{{ h.destino }}</span>
-										</div>
-										<p style="font-size: 0.85em; margin: 0;">
-											<strong>Remite:</strong> {{ h.entrega }} <br>
-											<strong>Recibe:</strong> {{ h.recibe }}
-										</p>
-										<div v-if="h.obs" style="margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 5px; font-size: 0.8em; font-style: italic;">
-											{{ h.obs }}
-										</div>
-									</div>
-								</div>
-								{% endverbatim %}
-							</div>
+						<!-- Fila 2: Apellidos -->
+						<div class="col-6 col-12-mobile">
+							<label style="font-size: 0.6em;">1er Apellido</label>
+							<input type="text" v-model="filtrosPersona.apellido1" placeholder="Ej: PEREZ">
+						</div>
+						<div class="col-6 col-12-mobile">
+							<label style="font-size: 0.6em;">2do Apellido</label>
+							<input type="text" v-model="filtrosPersona.apellido2" placeholder="Ej: RODRIGUEZ">
+						</div>
+
+						<!-- Fila 3: Documento y Alias -->
+						<div class="col-6 col-12-mobile">
+							<label style="font-size: 0.6em;">Nro. Documento</label>
+							<input type="text" v-model="filtrosPersona.documento" placeholder="Sin puntos ni guiones">
+						</div>
+						<div class="col-6 col-12-mobile">
+							<label style="font-size: 0.6em;">Alias / Apodo</label>
+							<input type="text" v-model="filtrosPersona.alias" placeholder="Ej: EL GORDO">
+						</div>
+
+						<!-- Botón de Búsqueda Avanzada -->
+						<div class="col-12">
+							<button @click="buscarAvanzado" class="button primary fit icon solid fa-search">
+								Ejecutar Búsqueda Avanzada (Vía Rápida)
+							</button>
 						</div>
 					</div>
-				</section>
+				</div>
+                </form>
+            </div>
+            </div>
 
-				<!-- Para crear expedientes -->
-				<section id="crear" v-show="seccionActual === 'crear'">
-					<div class="container">
-						<header><h2>Crear Expediente</h2></header>
-						
-						<!-- Box del Formulario -->
-						<div class="form-container">
-							<form @submit.prevent="guardarNuevoExpediente">
-								<div class="row gtr-uniform">
-									<div class="col-6 col-12-mobile">
-										<label>Código Interno</label>
-										<input type="text" v-model="nuevoExpediente.codigo" required placeholder="Ej: BK001">
-									</div>
-									<div class="col-6 col-12-mobile">
-										<label>Oficina Solicitante</label>
-										<select v-model="nuevoExpediente.oficina_id" required>
-											<option value="">Seleccione una oficina...</option>
-											<option v-for="oficina in oficinas" :key="oficina.id" :value="oficina.id">
-												{% verbatim %}{{ oficina.nombre }}{% endverbatim %}
-											</option>
-										</select>
-									</div>
-									<div class="col-12">
-										<label>Observaciones Iniciales</label>
-										<textarea v-model="nuevoExpediente.observaciones"></textarea>
-									</div>
-									<div class="col-12">
-										<input type="submit" value="Crear Expediente" class="button primary fit">
-									</div>
-								</div>
-							</form>
-						</div>
+            <!-- Tabla de Resultados de Búsqueda -->
+            <div v-if="resultados.length > 0" style="margin-top: 3em;">
+                <div class="results-table-container">
+                    <table class="results-table">
+                        <thead>
+                            <tr>
+                                <th>Sujeto / Persona</th>
+                                <th>Documentos</th>
+                                <th>Nac.</th>
+                                <th>Rol</th>
+                                <th>Expediente</th>
+                                <th>Oficina Actual</th>
+                                <th>Ver</th>
+                            </tr>
+                        </thead>
+                        {% verbatim %}
+                        <tbody>
+                            <tr v-for="res in resultadosPaginados" :key="res.expediente_id + '-' + res.persona_id">
+                                <td class="uppercase">
+                                    <a href="#" @click.prevent="$root.verPerfilPersona(res.persona_id)" v-if="res.persona_id" style="border:none; font-weight: 700;">
+                                        {{ res.persona_nombre }}
+                                    </a>
+                                    <span v-else style="color: #ccc;">{{ res.persona_nombre }}</span>
+                                    <small v-if="res.persona_aliases" style="display:block; color: #e74c3c; font-style: italic; font-size: 0.7em;">
+                                        ({{ res.persona_aliases }})
+                                    </small>
+                                </td>
+                                <td>
+                                    <div v-if="res.documento && res.documento !== '---'">
+                                        <small v-for="doc in res.documento.split(',')" style="display:block; font-size: 0.7em; line-height: 1.1;">
+                                            {{ doc.trim() }}
+                                        </small>
+                                    </div>
+                                    <span v-else>---</span>
+                                </td>
+                                <td class="uppercase" style="font-weight: bold;">{{ res.nacionalidad_cod }}</td>
+                                <td><span class="badge" style="font-size: 0.7em;">{{ res.rol }}</span></td>
+                                <td class="uppercase" style="font-weight: bold;">{{ res.expediente_codigo }}</td>
+                                <td>{{ res.oficina }}</td>
+                                <td>
+                                    <button @click="$root.verDetalles(res.expediente_id)" class="button small icon solid fa-eye"></button>
+                                </td>
+                            </tr>
+                        </tbody>
+                        {% endverbatim %}
+                    </table>
+                </div>
+                <!-- Paginación -->
+                <div class="pagination" v-if="totalPaginas > 1">
+                    <button class="button alt small" :disabled="paginaActual === 1" @click="paginaActual--">Anterior</button>
+                    <span style="align-self: center; font-size: 0.8em;">Página {{ paginaActual }} de {{ totalPaginas }}</span>
+                    <button class="button alt small" :disabled="paginaActual === totalPaginas" @click="paginaActual++">Siguiente</button>
+                </div>
+            </div>
+            <p v-else-if="!cargando && queryBusqueda" style="margin-top: 2em; text-align: center;">No hay coincidencias.</p>
+        </div>
+    </section>
 
-						<!-- NUEVA TABLA DE EXPEDIENTES RECIENTES -->
-						<div style="margin-top: 3em;">
-							<header>
-								<h3 style="font-size: 1.2em; color: #5983b0;">
-									<i class="fas fa-clock"></i> Expedientes Creados Recientemente
-								</h3>
-							</header>
-							
-							<div class="results-table-container">
-								<table class="results-table">
-									<thead>
-										<tr>
-											<th style="width: 15%;">Expediente</th>
-											<th style="width: 50%;">Observaciones</th>
-											<th style="width: 15%;">F. Ingreso</th>
-											<th style="width: 10%;">Acción</th>
-										</tr>
-									</thead>
-									{% verbatim %}
-									<tbody>
-										<tr v-for="rec in expedientesRecientes" :key="rec.id">
-											<td class="uppercase" style="font-weight: bold;">{{ rec.codigo }}</td>
-											<td style="font-size: 0.85em; color: #666; font-style: italic;">
-												{{ rec.observaciones }}
-											</td>
-											<td>{{ rec.fecha_ingreso }}</td>
-											<td>
-												<button @click="$root.verDetalles(rec.id)" class="button small" style="padding: 0 10px; height: 30px; line-height: 30px;">
-													<i class="fas fa-eye"></i> Ver
-												</button>
-											</td>
-										</tr>
-									</tbody>
-									{% endverbatim %}
-								</table>
-							</div>
-						</div>
-					</div>
-				</section>
-				<!-- DETALLES DE PERSONA -->
-				<section id="persona_perfil" v-show="seccionActual === 'persona_perfil'">
-					{% verbatim %}
-					<div class="container">
-						<!-- ENCABEZADO: Mantiene tu estilo original -->
-						<header>
-							<a href="#" @click.prevent="seccionActual = 'buscar'"><i class="fas fa-arrow-left"></i> Volver al buscador</a>
-							<h2 class="uppercase">{{ personaPerfil.primer_nombre }} {{ personaPerfil.primer_apellido }}</h2>
-							<p style="font-weight: 600; color: #5983b0;">
-								<i class="fas fa-globe"></i> NACIONALIDAD: {{ personaPerfil.nacionalidad }} 
-								<span style="margin: 0 15px; color: #ccc;">|</span> 
-								<i class="fas fa-user-tag"></i> ALIAS: {{ personaPerfil.aliases.join(', ') }}
-							</p>
-						</header>
+    <!-- 2. SECCIÓN: DETALLES DEL EXPEDIENTE -->
+    <section id="detalles" v-show="seccionActual === 'detalles'">
+        <div class="container">
+            {% verbatim %}
+            <header>
+                <a href="#" @click.prevent="seccionActual = 'buscar'"><i class="fas fa-arrow-left"></i> Volver</a>
+                <h2>Expediente: {{ expediente.codigo }}</h2>
+            </header>
 
-						<!-- PRIMERA FILA: Documentos Registrados y Participación en Expedientes -->
-						<div class="row">
-							<!-- Columna Izquierda (Pequeña): Documentos Registrados -->
-							<div class="col-4 col-12-mobile">
-								<div class="form-container" style="padding: 1.5em; margin-bottom: 2em;">
-									<h3 style="color: #273C53;"><i class="fas fa-id-card"></i> Documentos Registrados</h3>
-									<ul style="list-style: none; padding: 0; font-size: 0.85em; margin: 0;">
-										<li v-for="iden in personaPerfil.identificaciones" :key="iden.id" 
-											style="margin-bottom: 10px; padding: 8px; background: #f8f9fa; border-radius: 5px; border-left: 3px solid #5983b0;">
-											<strong>{{ iden.tipo }}:</strong> {{ iden.numero }}
-										</li>
-										<li v-if="personaPerfil.identificaciones.length === 0" style="font-style: italic; color: #888;">
-											No hay documentos cargados.
-										</li>
-									</ul>
-								</div>
-							</div>
+            <div class="row" style="margin-bottom: 2em;">
+                <div class="col-12">
+                    <div class="form-container" style="padding: 1.5em; text-align: left; border-left: 5px solid #5983b0;">
+                        <h3 style="font-size: 0.9em; margin-bottom: 10px; color: #5983b0;"><i class="fas fa-sticky-note"></i> Observaciones:</h3>
+                        <p style="margin: 0; line-height: 1.6; color: #444; font-style: italic;">
+                            {{ expediente.observaciones ? expediente.observaciones : 'Sin observaciones.' }}
+                        </p>
+                    </div>
+                </div>
+            </div>
 
-							<!-- Columna Derecha (Grande): Participación en Expedientes -->
-							<div class="col-8 col-12-mobile">
-								<div class="form-container" style="margin-bottom: 2em;">
-									<h3 style="color: #273C53;"><i class="fas fa-folder-open"></i> Participación en Expedientes</h3>
-									<div class="results-table-container">
-										<table class="results-table" style="font-size: 0.8em;">
-											<thead>
-												<tr>
-													<th>Expediente</th>
-													<th>Oficina Actual</th>
-													<th>Rol</th>
-													<th>Ver</th>
-												</tr>
-											</thead>
-											<tbody>
-												<tr v-for="ex in personaPerfil.expedientes" :key="ex.id">
-													<td style="font-weight: bold;">{{ ex.codigo }}</td>
-													<td>{{ ex.oficina }}</td>
-													<td><span class="badge" style="font-size: 0.8em;">{{ ex.rol }}</span></td>
-													<td>
-														<button @click="$root.verDetalles(ex.id)" class="button small icon solid fa-eye" style="padding: 0 10px; height: 30px; line-height: 30px;"></button>
-													</td>
-												</tr>
-											</tbody>
-										</table>
-									</div>
-								</div>
-							</div>
-						</div>
+            <div class="row">
+                <!-- Izquierda: Alfresco y Movimientos -->
+                <div class="col-4 col-12-mobile">
+                    <div class="form-container" style="padding: 1.5em; margin-bottom: 2em; text-align: center;">
+                        <h3>Estado Digital</h3>
+                        <div class="switch-container" style="margin-bottom: 1.5em; display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                            <label class="switch">
+                                <input type="checkbox" v-model="expediente.subido_alfresco">
+                                <span class="slider"></span>
+                            </label>
+                            <span style="font-size: 0.8em; font-weight: 700;">{{ expediente.subido_alfresco ? 'EN ALFRESCO' : 'PENDIENTE' }}</span>
+                        </div>
+                        <button class="button small fit" @click="$root.guardarCambioAlfresco()">Confirmar</button>
+                    </div>
 
-						<!-- SEGUNDA FILA: Gestión de Alias y Agregar Documento -->
-						<div class="row">
-							<!-- Columna Izquierda (Pequeña): Gestión de Alias -->
-							<div class="col-4 col-12-mobile">
-								<div class="form-container" style="padding: 1.5em; margin-bottom: 2em;">
-									<h3 style="color: #273C53;"><i class="fas fa-user-edit"></i> Gestión de Alias</h3>
-									<div class="row gtr-uniform">
-										<div class="col-12">
-											<input type="text" v-model="$root.nuevoAliasPerfil" placeholder="Nuevo apodo..." @keyup.enter="$root.guardarNuevoAliasPerfil()">
-										</div>
-										<div class="col-12">
-											<button class="button small fit" @click="$root.guardarNuevoAliasPerfil()">Agregar Alias</button>
-										</div>
-									</div>
-									<!-- Lista de badges de alias -->
-									<div style="margin-top: 15px; display: flex; flex-wrap: wrap; gap: 5px;">
-										<span v-for="a in personaPerfil.aliases" :key="a" class="badge" style="border-radius: 20px; font-size: 0.6em; padding: 2px 10px;">
-											{{ a }}
-										</span>
-									</div>
-								</div>
-							</div>
+                    <div class="form-container" style="padding: 1.5em;">
+                        <h3 style="font-size: 0.9em;">Últimos Movimientos</h3>
+                        <div class="timeline" v-if="movimientosResumidos.length > 0">
+                            <div v-for="m in movimientosResumidos" class="timeline-item">
+                                <div class="timeline-dot"></div>
+                                <div class="timeline-content">
+                                    <span class="timeline-date">{{ m.fecha }}</span>
+                                    <p><strong>{{ m.ruta_corta }}</strong></p>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="margin-top: 1em;">
+                            <button class="button small fit" @click="$root.abrirRegistroMovimiento()">Registrar Movimiento</button>
+                            <button class="button alt small fit" style="margin-top: 5px;" @click="seccionActual = 'historial_completo'">Ver Todo</button>
+                        </div>
+                    </div>
+                </div>
 
-							<!-- Columna Derecha (Grande): Agregar Documento -->
-							<div class="col-8 col-12-mobile">
-								<div class="form-container" style="margin-bottom: 2em;">
-									<h3 style="color: #273C53;"><i class="fas fa-plus-circle"></i> Agregar Documento</h3>
-									<div class="row gtr-uniform aln-bottom">
-										<div class="col-4 col-12-mobile">
-											<label>Tipo de Documento</label>
-											<select v-model="$root.nuevoDocPerfil.tipo_documento_id">
-												<option value="">Seleccionar...</option>
-												<option v-for="t in $root.tiposDocumento" :key="t.id" :value="t.id">{{ t.nombre }}</option>
-											</select>
-										</div>
-										<div class="col-5 col-12-mobile">
-											<label>Número de Identificación</label>
-											<input type="text" v-model="$root.nuevoDocPerfil.numero" placeholder="Ej: 1.234.567-8">
-										</div>
-										<div class="col-3 col-12-mobile">
-											<button class="button primary small fit" @click="$root.guardarNuevoDocPerfil()">
-												<i class="fas fa-save"></i> Guardar
-											</button>
-										</div>
-									</div>
-								</div>
-							</div>
-						</div>
-					</div>
-					{% endverbatim %}
-				</section>
+                <!-- Derecha: Vincular Personas -->
+                <div class="col-8 col-12-mobile">
+                    <div class="form-container" style="margin-bottom: 2em; border-bottom: 4px solid #5983b0;">
+                        <h3><i class="fas fa-search-plus"></i> Vincular Persona Registrada</h3>
+                        <input type="text" v-model="$root.queryPersonaExistente" @input="$root.buscarPersonaExistente" placeholder="Escriba nombre o documento...">
+                        <div v-if="$root.resultadosSugeridos.length > 0" class="results-table-container" style="max-height: 200px; overflow-y: auto;">
+                            <div v-for="res in $root.resultadosSugeridos" :key="res.persona_id" style="padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+                                <div style="font-size: 0.75em;"><strong class="uppercase">{{ res.persona_nombre }}</strong><br>{{ res.documento }}</div>
+                                <button class="button small primary" @click="$root.ejecutarVinculoExistente(res.persona_id)">Vincular</button>
+                            </div>
+                        </div>
+                    </div>
 
+                    <div class="form-container">
+                        <h3>Vincular Nueva Persona</h3>
+                        <div class="row gtr-uniform">
+                            <div class="col-6 col-12-mobile"><label>1er Nombre</label><input type="text" v-model="nuevaPersona.primer_nombre"></div>
+                            <div class="col-6 col-12-mobile"><label>2do Nombre</label><input type="text" v-model="nuevaPersona.segundo_nombre"></div>
+                            <div class="col-6 col-12-mobile"><label>1er Apellido</label><input type="text" v-model="nuevaPersona.primer_apellido"></div>
+                            <div class="col-6 col-12-mobile"><label>2do Apellido</label><input type="text" v-model="nuevaPersona.segundo_apellido"></div>
+                            <div class="col-6 col-12-mobile"><label>Fecha Nac.</label><input type="date" v-model="nuevaPersona.fecha_nacimiento"></div>
+                            <div class="col-6 col-12-mobile"><label>Alias (Comas para varios)</label><input type="text" v-model="nuevaPersona.alias"></div>
+                            <div class="col-4 col-12-mobile">
+                                <label>Tipo Doc</label>
+                                <select v-model="nuevaPersona.tipo_documento_id">
+                                    <option v-for="t in $root.tiposDocumento" :value="t.id">{{ t.nombre }}</option>
+                                </select>
+                            </div>
+                            <div class="col-8 col-12-mobile"><label>Documento</label><input type="text" v-model="nuevaPersona.documento"></div>
+                            <div class="col-6 col-12-mobile">
+                                <label>Nacionalidad</label>
+                                <input list="list-p" v-model="nuevaPersona.nacionalidad_nombre" placeholder="Buscar país...">
+                                <datalist id="list-p"><option v-for="p in $root.paises" :value="p.nombre"></option></datalist>
+                            </div>
+                            <div class="col-6 col-12-mobile">
+                                <label>Rol</label>
+                                <select v-model="nuevaPersona.rol">
+                                    <option value="indagado">Indagado</option>
+                                    <option value="victima">Víctima</option>
+                                    <option value="testigo">Testigo</option>
+                                </select>
+                            </div>
+                            <div class="col-12"><button class="button primary fit" @click.prevent="$root.agregarPersona()">Vincular Sujeto</button></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-				<!-- DETALLES DEL EXPEDIENTE -->
-				<section id="detalles" v-show="seccionActual === 'detalles'">
-					{% verbatim %}
-					<div class="container">
-						<header>
-							<a href="#" @click.prevent="seccionActual = 'buscar'"><i class="fas fa-arrow-left"></i> Volver</a>
-							<h2>Expediente: {{ expediente.codigo }}</h2>
-						</header>
+            <!-- Tabla Inferior -->
+            <div class="row" style="margin-top: 3em;">
+                <div class="col-12">
+                    <h3>Personas en este Expediente</h3>
+                    <div class="results-table-container">
+                        <table class="results-table">
+                            <thead><tr><th>Nombre</th><th>Alias</th><th>Documentos</th><th>Rol</th><th>Acción</th></tr></thead>
+                            <tbody>
+                                <tr v-for="p in personasVinculadas" :key="p.persona_id">
+                                    <td class="uppercase">
+                                        <a href="#" @click.prevent="$root.verPerfilPersona(p.persona_id)" style="border:none; font-weight: bold;">
+                                            {{ p.primer_nombre }} {{ p.segundo_nombre }} {{ p.primer_apellido }} {{ p.segundo_apellido }}
+                                        </a>
+                                    </td>
+                                    <td><small v-if="p.persona_aliases" style="color:#e74c3c;">{{ p.persona_aliases }}</small></td>
+                                    <td><small style="font-size: 0.7em;">{{ p.documento }}</small></td>
+                                    <td><span class="badge">{{ p.rol }}</span></td>
+                                    <td><button class="btn-remove" @click="$root.quitarPersona(p.persona_id)"><i class="fas fa-trash"></i></button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endverbatim %}
+        </div>
+    </section>
 
-						<!-- BOX DE OBSERVACIONES -->
-						<div class="row" style="margin-bottom: 2em;">
-							<div class="col-12">
-								<div class="form-container" style="padding: 1.5em; text-align: left; border-left: 5px solid #5983b0;">
-									<h3 style="font-size: 0.9em; margin-bottom: 10px; color: #5983b0;">
-										<i class="fas fa-sticky-note"></i> Observaciones del Expediente:
-									</h3>
-									<p style="margin: 0; line-height: 1.6; color: #444; font-style: italic;">
-										{{ expediente.observaciones ? expediente.observaciones : 'Sin observaciones registradas.' }}
-									</p>
-								</div>
-							</div>
-						</div>
+    <!-- 3. SECCIÓN: PERFIL DE PERSONA (2 FILAS) -->
+    <section id="persona_perfil" v-show="seccionActual === 'persona_perfil'">
+        {% verbatim %}
+        <div class="container">
+            <header>
+                <a href="#" @click.prevent="seccionActual = 'buscar'"><i class="fas fa-arrow-left"></i> Volver</a>
+                <h2 class="uppercase">{{ personaPerfil.primer_nombre }} {{ personaPerfil.segundo_nombre }} {{ personaPerfil.primer_apellido }} {{ personaPerfil.segundo_apellido }}</h2>
+                <p><strong>NACIONALIDAD:</strong> {{ personaPerfil.nacionalidad }} | <strong>ALIAS:</strong> {{ personaPerfil.aliases.join(', ') }}</p>
+            </header>
 
-						<div class="row">
-							<!-- Columna Izquierda: Gestión y Movimientos cortos -->
-							<div class="col-4 col-12-mobile">
-								 <!-- Switch ALFRESCO -->
-								<div class="form-container" style="padding: 1.5em; margin-bottom: 2em;">
-									<h3>Estado Digital</h3>
-									<div class="switch-container" style="margin-bottom: 1.5em; display: flex; align-items: center; gap: 15px;">
-										<label class="switch">
-											<input type="checkbox" v-model="expediente.subido_alfresco">
-											<span class="slider"></span>
-										</label>										
-										<span style="font-size: 0.85em; font-weight: 600;">
-											{{ expediente.subido_alfresco ? 'Subido a Alfresco' : 'No subido a Alfresco' }}
-										</span>										
-									</div>
-									<button class="button small fit" @click="$root.guardarCambioAlfresco">
-										<i class="fas fa-save"></i> Registrar cambio
-									</button>
-								</div>
+            <!-- Fila 1: Documentos y Expedientes -->
+            <div class="row">
+                <div class="col-4 col-12-mobile">
+                    <div class="form-container" style="margin-bottom: 2em;">
+                        <h3><i class="fas fa-id-card"></i> Documentos</h3>
+                        <ul style="list-style: none; padding: 0;">
+                            <li v-for="iden in personaPerfil.identificaciones" style="padding: 8px; background: #f8f9fa; margin-bottom: 5px; border-left: 3px solid #5983b0;">
+                                <strong>{{ iden.tipo }}:</strong> {{ iden.numero }}
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-8 col-12-mobile">
+                    <div class="form-container" style="margin-bottom: 2em;">
+                        <h3><i class="fas fa-folder-open"></i> Participación en Expedientes</h3>
+                        <table class="results-table" style="font-size: 0.8em;">
+                            <thead><tr><th>Expediente</th><th>Oficina</th><th>Rol</th><th>Ver</th></tr></thead>
+                            <tbody>
+                                <tr v-for="ex in personaPerfil.expedientes">
+                                    <td><strong>{{ ex.codigo }}</strong></td>
+                                    <td>{{ ex.oficina }}</td>
+                                    <td><span class="badge">{{ ex.rol }}</span></td>
+                                    <td><button @click="$root.verDetalles(ex.id)" class="button small icon solid fa-eye"></button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
 
-								<!-- (Timeline lateral) -->
-								<div class="form-container" style="margin-top: 2em; padding: 1.5em;">
-									<h3 style="font-size: 0.9em;">Últimos Movimientos del Expediente Físico</h3>
-									<div class="timeline" v-if="movimientosResumidos.length > 0">
-										<div v-for="m in movimientosResumidos" class="timeline-item" style="font-size: 0.7em;">
-											<div class="timeline-dot"></div>
-											<div class="timeline-content">
-												<span class="timeline-date">{{ m.fecha }}</span>
-												<!-- USAMOS RUTA CORTA (EJ: DARI → DCI) -->
-												<p><strong style="color: #5983b0;">{{ m.ruta_corta }}</strong></p>
-											</div>
-										</div>
-									</div>
-									<p v-else style="font-size: 0.7em; font-style: italic;">Sin movimientos registrados.</p>
-									
-									<div style="margin-top: 1.5em;">
-										<button class="button small fit" @click="$root.abrirRegistroMovimiento()">
-											<i class="fas fa-exchange-alt"></i> Registrar Movimiento
-										</button>
-										<button class="button alt small fit" style="margin-top: 10px;" @click="seccionActual = 'historial_completo'">
-											<i class="fas fa-history"></i> Ver Historial Completo
-										</button>
-									</div>
-								</div>
-							</div>
+            <!-- Fila 2: Gestion Alias y Agregar Doc -->
+            <div class="row">
+                <div class="col-4 col-12-mobile">
+                    <div class="form-container">
+                        <h3><i class="fas fa-user-tag"></i> Agregar Alias</h3>
+                        <input type="text" v-model="$root.nuevoAliasPerfil" placeholder="Nuevo apodo..." @keyup.enter="$root.guardarNuevoAliasPerfil()">
+                        <button class="button small fit" style="margin-top: 10px;" @click="$root.guardarNuevoAliasPerfil()">Agregar</button>
+                    </div>
+                </div>
+                <div class="col-8 col-12-mobile">
+                    <div class="form-container">
+                        <h3><i class="fas fa-plus-circle"></i> Agregar Documento</h3>
+                        <div class="row gtr-uniform aln-bottom">
+                            <div class="col-4"><label>Tipo</label><select v-model="$root.nuevoDocPerfil.tipo_documento_id"><option v-for="t in $root.tiposDocumento" :value="t.id">{{ t.nombre }}</option></select></div>
+                            <div class="col-5"><label>Número</label><input type="text" v-model="$root.nuevoDocPerfil.numero"></div>
+                            <div class="col-3"><button class="button primary small fit" @click="$root.guardarNuevoDocPerfil()">Guardar</button></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endverbatim %}
+    </section>
 
-							<!-- Columna Derecha: Formulario de Vinculación -->
-							<div class="col-8 col-12-mobile">
-								<!-- BUSCADOR DE PERSONAS EXISTENTES -->
-								<div class="form-container" style="margin-bottom: 2em; border-bottom: 4px solid #5983b0;">
-									<h3><i class="fas fa-search-plus"></i> Vincular Persona Registrada</h3>
-									<p style="font-size: 0.7em; margin-bottom: 10px;">Busque por nombre o documento a una persona que ya esté en el sistema.</p>
-									<input type="text" v-model="$root.queryPersonaExistente" 
-										@input="$root.buscarPersonaExistente" 
-										placeholder="Escriba nombre o documento para buscar...">
-									
-									<!-- Resultados sugeridos rápidos -->
-									<div v-if="$root.resultadosSugeridos.length > 0" 
-										style="background: #fff; border: 1px solid #ddd; border-radius: 5px; margin-top: 5px; max-height: 200px; overflow-y: auto;">
-										<div v-for="res in $root.resultadosSugeridos" :key="res.persona_id" 
-											style="padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
-											<div style="font-size: 0.75em;">
-												<strong class="uppercase">{{ res.persona_nombre }}</strong> 
-												<small style="display:block;">{{ res.documento }} | {{ res.nacionalidad_cod }}</small>
-											</div>
-											<button class="button small primary" style="height: 25px; line-height: 25px; padding: 0 10px;" 
-													@click="$root.ejecutarVinculoExistente(res.persona_id)">Vincular</button>
-										</div>
-									</div>
-								<!-- Formulario de Vinculación de nuevas personas-->
-								<div class="form-container">
-									<h3><i class="fas fa-user-plus"></i> Registrar y Vincular Nueva Persona</h3>
-									<div class="row gtr-uniform">
-										<div class="col-6 col-12-mobile">
-											<label>Primer Nombre</label>
-											<input type="text" v-model="nuevaPersona.primer_nombre">
-										</div>
-										<div class="col-6 col-12-mobile">
-											<label>Segundo Nombre</label>
-											<input type="text" v-model="nuevaPersona.segundo_nombre">
-										</div>
-										<div class="col-6 col-12-mobile">
-											<label>Primer Apellido</label>
-											<input type="text" v-model="nuevaPersona.primer_apellido">
-										</div>
-										<div class="col-6 col-12-mobile">
-											<label>Segundo Apellido</label>
-											<input type="text" v-model="nuevaPersona.segundo_apellido">
-										</div>
-										
-										<!-- CAMPO AGREGADO: FECHA DE NACIMIENTO -->
-										<div class="col-6 col-12-mobile">
-											<label>Fecha de Nacimiento</label>
-											<input type="date" v-model="nuevaPersona.fecha_nacimiento">
-										</div>
-										<div class="col-6 col-12-mobile">
-											<label>Alias / Apodos (Separar por ",")</label>
-											<input type="text" v-model="nuevaPersona.alias" placeholder="Ej: EL GORDO, PEPE">
-										</div>			
+    <!-- 4. SECCIÓN: CREAR EXPEDIENTE -->
+    <section id="crear" v-show="seccionActual === 'crear'">
+        <div class="container">
+            <header><h2>Crear Nuevo Expediente</h2></header>
+            <div class="form-container">
+                <form @submit.prevent="guardarNuevoExpediente">
+                    <div class="row gtr-uniform">
+                        <div class="col-6 col-12-mobile"><label>Código Interno</label><input placeholder="Ejemplo BK001" type="text" v-model="nuevoExpediente.codigo" required></div>
+                        <div class="col-6 col-12-mobile">
+                            <label>Oficina Solicitante</label>
+                            <select v-model="nuevoExpediente.oficina_id" required>
+                                <option value="">Seleccione...</option>
+                                <option v-for="o in oficinas" :key="o.id" :value="o.id">{% verbatim %}{{ o.nombre }}{% endverbatim %}</option>
+                            </select>
+                        </div>
+                        <div class="col-12"><label>Observaciones</label><textarea v-model="nuevoExpediente.observaciones"></textarea></div>
+                        <div class="col-12"><input type="submit" value="Crear Expediente" class="button primary fit"></div>
+                    </div>
+                </form>
+            </div>
+            <!-- Recientes -->
+            <div style="margin-top: 3em;">
+                <h3><i class="fas fa-clock"></i> Últimos 10 Creados</h3>
+                <div class="results-table-container">
+                    <table class="results-table">
+                        <thead><tr><th>Expediente</th><th>Observaciones</th><th>Fecha</th><th>Ver</th></tr></thead>
+                        {% verbatim %}
+                        <tbody>
+                            <tr v-for="rec in expedientesRecientes" :key="rec.id">
+                                <td class="uppercase" style="font-weight: bold;">{{ rec.codigo }}</td>
+                                <td style="font-size: 0.8em; font-style: italic;">{{ rec.observaciones }}</td>
+                                <td>{{ rec.fecha_ingreso }}</td>
+                                <td><button @click="$root.verDetalles(rec.id)" class="button small icon solid fa-eye"></button></td>
+                            </tr>
+                        </tbody>
+                        {% endverbatim %}
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
 
-										<div class="col-4 col-12-mobile">
-											<label>Tipo Doc.</label>
-											<select v-model="nuevaPersona.tipo_documento_id">
-												<option v-for="t in $root.tiposDocumento" :value="t.id">{{ t.nombre }}</option>
-											</select>
-										</div>
-										<div class="col-8 col-12-mobile">
-											<label>Nro. Documento</label>
-											<input type="text" v-model="nuevaPersona.documento">
-										</div>
-										<div class="col-6 col-12-mobile">
-											<label>Nacionalidad</label>
-											<input list="lista-paises-det" v-model="nuevaPersona.nacionalidad_nombre" placeholder="Buscar país...">
-											<datalist id="lista-paises-det">
-												<option v-for="p in $root.paises" :value="p.nombre"></option>
-											</datalist>
-										</div>
-										<div class="col-6 col-12-mobile">
-											<label>Rol</label>
-											<select v-model="nuevaPersona.rol">
-												<option value="indagado">Indagado</option>
-												<option value="victima">Víctima</option>
-												<option value="denunciante">Denunciante</option>
-												<option value="testigo">Testigo</option>
-											</select>
-										</div>
-										<div class="col-12">
-											<button class="button primary fit icon solid fa-user-plus" @click.prevent="$root.agregarPersona">Vincular al Listado</button>
-										</div>
-									</div>
-								</div>
-							</div>
-						</div>
+    <!-- 5. SECCIÓN: REGISTRAR MOVIMIENTO -->
+    <section id="registrar_movimiento" v-show="seccionActual === 'registrar_movimiento'">
+        <div class="container">
+            <header>
+                <a href="#" @click.prevent="seccionActual = 'detalles'"><i class="fas fa-arrow-left"></i> Cancelar</a>
+                {% verbatim %}<h2>Movimiento: {{ nuevoMovimiento.codigo_expediente }}</h2>{% endverbatim %}
+            </header>
+            <div class="form-container">
+                <form @submit.prevent="guardarMovimiento">
+                    <div class="row gtr-uniform">
+                        <div class="col-6 col-12-mobile"><label>Fecha y Hora (Real)</label><input type="datetime-local" v-model="nuevoMovimiento.fecha" required></div>
+                        <div class="col-6 col-12-mobile"><label>Origen</label><select v-model="nuevoMovimiento.origen_id"><option v-for="o in oficinas" :value="o.id">{% verbatim %}{{ o.nombre }}{% endverbatim %}</option></select></div>
+                        <div class="col-6 col-12-mobile"><label>Destino</label><select v-model="nuevoMovimiento.destino_id"><option v-for="o in oficinas" :value="o.id">{% verbatim %}{{ o.nombre }}{% endverbatim %}</option></select></div>
+                        <div class="col-6 col-12-mobile"><label>Entregado por</label><input type="text" v-model="nuevoMovimiento.entregado_por"></div>
+                        <div class="col-6 col-12-mobile"><label>Recibido por</label><input type="text" v-model="nuevoMovimiento.recibido_por"></div>
+                        <div class="col-12"><label>Observaciones</label><textarea v-model="nuevoMovimiento.observaciones"></textarea></div>
+                        <div class="col-12"><button type="submit" class="button primary fit">Guardar Movimiento</button></div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </section>
 
-						<!-- TABLA DE PERSONAS VINCULADAS -->
-						<div class="row" style="margin-top: 3em;">
-							<div class="col-12">
-								<header><h3>Personas Vinculadas a este Expediente</h3></header>
-								<div class="results-table-container">
-									<table class="results-table">
-										<thead>
-											<tr>
-												<th>Nombre Completo</th>
-												<th>Alias</th>
-												<th>Documento</th>
-												<th>Nacionalidad</th>
-												<th>Rol</th>
-												<th>Acciones</th>
-											</tr>
-										</thead>
-										<tbody>
-											<tr v-for="(p, index) in personasVinculadas" :key="p.persona_id">
-												<td class="uppercase" style="font-weight: 600; color: #5983b0;">
-													 <a href="#" @click.prevent="$root.verPerfilPersona(p.persona_id)" style="border: none; color: inherit; font-weight: 700;">
-														{{ p.primer_nombre }} {{ p.segundo_nombre }} {{ p.primer_apellido }}  {{ p.segundo_apellido }}
-													</a>
-												</td>
-												<td> 													
-													<small v-if="p.persona_aliases" style="display:block; color: #e74c3c; font-style: italic;">
-														({{ p.persona_aliases }})
-													</small>
-													<small v-else style="color: #ccc;">---</small>
-												</td>
-												<td>{{ p.documento }}</td>
-												<td class="uppercase">{{ p.nacionalidad_nombre }}</td>
-												<td><span class="badge" style="font-size: 0.8em;">{{ p.rol }}</span></td>
-												<td>
-													 <button class="btn-remove" @click="$root.quitarPersona(p.persona_id)">
-														<i class="fas fa-trash"></i> Quitar
-													</button>
-												</td>
-											</tr>
-										</tbody>			
-								</div>
-							</div>
-						</div>
-					</div>
-					{% endverbatim %}
-				</section>
+    <!-- 6. SECCIÓN: HISTORIAL COMPLETO -->
+    <section id="historial_completo" v-show="seccionActual === 'historial_completo'">
+        {% verbatim %}
+        <div class="container">
+            <header><a href="#" @click.prevent="seccionActual = 'detalles'"><i class="fas fa-arrow-left"></i> Volver</a><h2>Historial Completo</h2></header>
+            <div class="row">
+                <div class="col-4 col-12-mobile">
+                    <div class="timeline"><div v-for="m in expediente.movimientos" class="timeline-item"><div class="timeline-dot"></div><div class="timeline-content"><span class="timeline-date">{{ m.fecha }}</span><p><strong>{{ m.ruta_corta }}</strong></p></div></div></div>
+                </div>
+                <div class="col-8 col-12-mobile">
+                    <div class="results-table-container">
+                        <table class="results-table" style="font-size: 0.7em;">
+                            <thead><tr><th>Fecha</th><th>Ruta</th><th>Remite/Recibe</th><th>Obs</th></tr></thead>
+                            <tbody><tr v-for="m in expediente.movimientos"><td>{{ m.fecha }}</td><td>{{ m.ruta_larga }}</td><td>{{ m.entrega }} / {{ m.recibe }}</td><td>{{ m.obs }}</td></tr></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endverbatim %}
+    </section>
 
-				<!-- Registrar movimiento -->
-				<section id="registrar_movimiento" v-show="seccionActual === 'registrar_movimiento'">
-					<div class="container">
-						<header>
-							<a href="#" @click.prevent="seccionActual = 'detalles'"><i class="fas fa-arrow-left"></i> Cancelar y volver</a>
-							{% verbatim %}<h2>Registrar Movimiento para {{ nuevoMovimiento.codigo_expediente }}</h2>{% endverbatim %}
-						</header>
+</div>
 
-						<div class="form-container">
-							<form @submit.prevent="guardarMovimiento">
-								<div class="row gtr-uniform">
-									<div class="col-6 col-12-mobile">
-										<label>Fecha y Hora del Traspaso (Manual)</label>
-										<input type="datetime-local" v-model="nuevoMovimiento.fecha" required>
-									</div>
-									<div class="col-6 col-12-mobile"></div> <!-- Espacio vacío -->
-
-									<div class="col-6 col-12-mobile">
-										<label>Oficina de Origen (Sale de:)</label>
-										<select v-model="nuevoMovimiento.origen_id" required>
-											<option v-for="o in oficinas" :value="o.id">{% verbatim %}{{ o.nombre }}{% endverbatim %}</option>
-										</select>
-									</div>
-									<div class="col-6 col-12-mobile">
-										<label>Oficina de Destino (Entra a:)</label>
-										<select v-model="nuevoMovimiento.destino_id" required>
-											<option v-for="o in oficinas" :value="o.id">{% verbatim %}{{ o.nombre }}{% endverbatim %}</option>
-										</select>
-									</div>
-
-									<div class="col-6 col-12-mobile">
-										<label>Entregado por:</label>
-										<input type="text" v-model="nuevoMovimiento.entregado_por" required>
-									</div>
-									<div class="col-6 col-12-mobile">
-										<label>Recibido por:</label>
-										<input type="text" v-model="nuevoMovimiento.recibido_por" required>
-									</div>
-
-									<div class="col-12">
-										<label>Observaciones (Tomos, folios, estado físico)</label>
-										<textarea v-model="nuevoMovimiento.observaciones" rows="3"></textarea>
-									</div>
-									<div class="col-12">
-										<button type="submit" class="button primary fit">Confirmar y Guardar Movimiento</button>
-									</div>
-								</div>
-							</form>
-						</div>
-					</div>
-				</section>
-
-				<!-- Historial Completo de movimientos de expedientes -->
-				<section id="historial_completo" v-show="seccionActual === 'historial_completo'">
-					{% verbatim %}
-					<div class="container">
-						<header>
-							<a href="#" @click.prevent="seccionActual = 'detalles'"><i class="fas fa-arrow-left"></i> Volver a detalles</a>
-							<h2>Historial Completo: {{ expediente.codigo }}</h2>
-						</header>
-
-						<div class="row">
-							<!-- Timeline Izquierda (ABREVIATURAS) -->
-							<div class="col-4 col-12-mobile">
-								<div class="timeline">
-									<div v-for="m in expediente.movimientos" class="timeline-item">
-										<div class="timeline-dot"></div>
-										<div class="timeline-content">
-											<span class="timeline-date">{{ m.fecha }}</span>
-											<p><strong style="color: #5983b0;">{{ m.ruta_corta }}</strong></p>
-										</div>
-									</div>
-								</div>
-							</div>
-
-							<!-- Tabla Excel Derecha (NOMBRES COMPLETOS) -->
-							<div class="col-8 col-12-mobile">
-								<div class="results-table-container">
-									<table class="results-table" style="font-size: 0.7em;">
-										<thead>
-											<tr>
-												<th>Fecha/Hora</th>
-												<th>Origen → Destino (Nombre Completo)</th>
-												<th>Remite / Recibe</th>
-												<th>Observaciones</th>
-											</tr>
-										</thead>
-										<tbody>
-											<tr v-for="m in expediente.movimientos">
-												<td>{{ m.fecha }}</td>
-												<!-- USAMOS RUTA LARGA -->
-												<td style="font-weight: bold;">{{ m.ruta_larga }}</td>
-												<td>
-													<small>Entregó:</small> {{ m.entrega }}<br>
-													<small>Recibió:</small> {{ m.recibe }}
-												</td>
-												<td style="font-style: italic;">{{ m.obs }}</td>
-											</tr>
-										</tbody>
-									</table>
-								</div>
-							</div>
-						</div>
-					</div>
-					{% endverbatim %}
-				</section>
-
-				<!-- Contacto -->
-				 <section id="contacto" v-show="seccionActual === 'contacto'">
-					<div class="container">
-						<header><h2>Contacto</h2></header>
-						<form method="post" action="#">
-							<div class="row">
-								<div class="col-6 col-12-mobile"><label>Nombre:</label><input type="text" value="Jane Doe" readonly /></div>
-								<div class="col-6 col-12-mobile"><label>Email:</label><input type="email" value="jane.doe@minterior.gub.uy" readonly /></div>
-								<div class="col-12"><textarea name="message" placeholder="Mensaje"></textarea></div>
-								<div class="col-12"><input type="submit" value="Enviar" /></div>
-							</div>
-						</form>
-					</div>
-				</section>
-			</div> <!-- CIERRE CORRECTO DEL MAIN --> 
 {% endblock %}

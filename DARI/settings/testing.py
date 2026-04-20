@@ -4,6 +4,21 @@ Django settings for DARI project.
 PARA PRUEBAS BASES DE DATOS EN SQLITE, NO USAR EN PRODUCCIÓN
 """
 from .base import *
+# core/middleware.py
+from django.http import HttpResponseForbidden
+
+ALLOWED_IPS = ['10.42.1.100']  # la IP que quieres permitir
+
+class RestrictIPMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        ip = request.META.get('REMOTE_ADDR')
+        if ip not in ALLOWED_IPS:
+            return HttpResponseForbidden("Acceso denegado")
+        return self.get_response(request)
+
 
 DEBUG = True
 
@@ -20,4 +35,10 @@ DATABASES = {
 # Desactivar hashing de passwords complejo para acelerar los tests
 PASSWORD_HASHERS = [
     'django.contrib.auth.hashers.MD5PasswordHasher',
+]
+
+
+# Agregamos el middleware de restricción
+MIDDLEWARE += [
+    'core.middleware.RestrictIPMiddleware',
 ]

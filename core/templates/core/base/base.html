@@ -52,6 +52,16 @@
 							// para el registro de movimientos:
 							historialCompleto: [], // Para la tabla excel
           					ultimoDestinoId: null, // Para autocompletar origen
+
+							//filtros avanzados de busqueda de persona
+							filtrosPersona: {
+								nombre1: '',
+								nombre2: '',
+								apellido1: '',
+								apellido2: '',
+								documento: '',
+								alias: ''
+							},
 							
 							// Detalles del expediente seleccionado
 							expediente: {
@@ -171,26 +181,43 @@
 							} catch (error) { alert("Error de conexión"); }
 						},
 
+						// 1. Búsqueda Rápida (Usa la caja de arriba)
 						async buscar() {
-							if (!this.queryBusqueda.trim()) return; // No buscar si está vacío
-							
+							if (!this.queryBusqueda.trim()) return;
 							this.cargando = true;
 							this.paginaActual = 1;
-							this.resultados = []; // Limpiar antes de buscar
+							// Limpiamos filtros avanzados para que no interfieran
+							this.filtrosPersona = { nombre1: '', nombre2: '', apellido1: '', apellido2: '', documento: '', alias: '' };
 							
 							try {
-								// IMPORTANTE: Revisar que la URL coincida con urls.py y use la barra final antes del ?
-								const url = `/api/buscar/?q=${encodeURIComponent(this.queryBusqueda)}&tipo=${this.tipoBusqueda}`;
-								console.log("Buscando en:", url); // Para debug en consola
-								
+								const url = `/api/buscar/?tipo=${this.tipoBusqueda}&q=${encodeURIComponent(this.queryBusqueda)}&mode=quick`;
 								const response = await fetch(url);
 								const data = await response.json();
 								this.resultados = data.resultados;
-							} catch (error) {
-								console.error("Error en la petición fetch:", error);
-							} finally {
-								this.cargando = false;
-							}
+							} catch (e) { console.error(e); }
+							finally { this.cargando = false; }
+						},
+
+						// 2. Búsqueda Avanzada (Usa los filtros específicos)
+						async buscarAvanzado() {
+							this.cargando = true;
+							this.paginaActual = 1;
+							this.queryBusqueda = ''; // Limpiamos la búsqueda general
+							
+							try {
+								let url = `/api/buscar/?tipo=persona&mode=advanced`;
+								url += `&n1=${encodeURIComponent(this.filtrosPersona.nombre1)}` +
+									`&n2=${encodeURIComponent(this.filtrosPersona.nombre2)}` +
+									`&a1=${encodeURIComponent(this.filtrosPersona.apellido1)}` +
+									`&a2=${encodeURIComponent(this.filtrosPersona.apellido2)}` +
+									`&doc=${encodeURIComponent(this.filtrosPersona.documento)}` +
+									`&alias=${encodeURIComponent(this.filtrosPersona.alias)}`;
+
+								const response = await fetch(url);
+								const data = await response.json();
+								this.resultados = data.resultados;
+							} catch (e) { console.error(e); }
+							finally { this.cargando = false; }
 						},
 						
 						async cargarPaises() {
@@ -352,8 +379,10 @@
 									const data = await response.json(); // <--- LEEMOS LA RESPUESTA DEL SERVER
 
 									// Si el servidor guardó con éxito, actualizamos la tabla visual
-									const personaFinal = { ...this.nuevaPersona,
+									const personaFinal = { 
+										...this.nuevaPersona,
 										persona_id: data.persona_id, // <--- GUARDAMOS EL ID QUE NOS DIO EL SERVER
+										nombre_completo: `${this.nuevaPersona.primer_nombre} ${this.nuevaPersona.segundo_nombre} ${this.nuevaPersona.primer_apellido} ${this.nuevaPersona.segundo_apellido}`.trim(),
 									 	// Sincronizamos el nombre del campo para que Vue lo encuentre
 										persona_aliases: this.nuevaPersona.alias, 
 										nacionalidad_nombre: this.nuevaPersona.nacionalidad_nombre,
