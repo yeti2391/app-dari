@@ -25,12 +25,10 @@ def home(request):
 @login_required
 @user_passes_test(es_dari)
 def buscar_expedientes(request):
-    # 1. Capturamos los parámetros de control
     query_general = request.GET.get('q', '').strip()
     tipo = request.GET.get('tipo', 'persona').strip()
-    mode = request.GET.get('mode', 'quick').strip() # 'quick' o 'advanced'
+    mode = request.GET.get('mode', 'quick').strip()
     
-    # 2. Capturamos los filtros específicos
     n1 = request.GET.get('n1', '').strip()
     n2 = request.GET.get('n2', '').strip()
     a1 = request.GET.get('a1', '').strip()
@@ -38,93 +36,104 @@ def buscar_expedientes(request):
     doc = request.GET.get('doc', '').strip()
     alias = request.GET.get('alias', '').strip()
 
-    # Si no hay ningún criterio, devolvemos vacío
     if not any([query_general, n1, n2, a1, a2, doc, alias]):
         return JsonResponse({'resultados': []})
 
-    # Queryset base
-    expedientes = Expediente.objects.select_related('oficina').distinct()
+    data = []
 
-    # --- LÓGICA DE FILTRADO ---
+    # =========================================================
+    # CASO A: BÚSQUEDA POR PERSONA (Solo devuelve al que coincide)
+    # =========================================================
     if tipo == 'persona':
+        # Buscamos directamente en la tabla de vínculos (ExpedientePersona)
+        vinculos = ExpedientePersona.objects.select_related(
+            'persona', 'expediente', 'expediente__oficina', 'persona__nacionalidad'
+        ).prefetch_related('persona__identificaciones__tipo_documento', 'persona__aliases')
+
         if mode == 'advanced':
-            # VÍA RÁPIDA: Filtros directos (PostgreSQL usa índices aquí)
             filtros = Q()
-            if n1: filtros &= Q(expedientepersona__persona__primer_nombre__icontains=n1)
-            if n2: filtros &= Q(expedientepersona__persona__segundo_nombre__icontains=n2)
-            if a1: filtros &= Q(expedientepersona__persona__primer_apellido__icontains=a1)
-            if a2: filtros &= Q(expedientepersona__persona__segundo_apellido__icontains=a2)
-            if doc: filtros &= Q(expedientepersona__persona__identificaciones__numero__icontains=doc)
-            if alias: filtros &= Q(expedientepersona__persona__aliases__alias__icontains=alias)
-            expedientes = expedientes.filter(filtros)
-        
+            if n1: filtros &= Q(persona__primer_nombre__icontains=n1)
+            if n2: filtros &= Q(persona__segundo_nombre__icontains=n2)
+            if a1: filtros &= Q(persona__primer_apellido__icontains=a1)
+            if a2: filtros &= Q(persona__segundo_apellido__icontains=a2)
+            if doc: filtros &= Q(persona__identificaciones__numero__icontains=doc)
+            if alias: filtros &= Q(persona__aliases__alias__icontains=alias)
+            vinculos = vinculos.filter(filtros)
         else:
-            # VÍA FLEXIBLE: Búsqueda general sobre el nombre completo (más lento)
-            expedientes = expedientes.annotate(
-                full_name_search=Concat(
-                    'expedientepersona__persona__primer_nombre', Value(' '),
-                    'expedientepersona__persona__segundo_nombre', Value(' '),
-                    'expedientepersona__persona__primer_apellido', Value(' '),
-                    'expedientepersona__persona__segundo_apellido',
+            # Búsqueda rápida sobre nombre concatenado, documento o alias
+            vinculos = vinculos.annotate(
+                full_name=Concat(
+                    'persona__primer_nombre', Value(' '), 'persona__segundo_nombre', Value(' '),
+                    'persona__primer_apellido', Value(' '), 'persona__segundo_apellido',
                     output_field=models.CharField()
                 )
             ).filter(
-                Q(full_name_search__icontains=query_general) | 
-                Q(expedientepersona__persona__identificaciones__numero__icontains=query_general) |
-                Q(expedientepersona__persona__aliases__alias__icontains=query_general)
+                Q(full_name__icontains=query_general) |
+                Q(persona__identificaciones__numero__icontains=query_general) |
+                Q(persona__aliases__alias__icontains=query_general)
             )
-    
-    else: # tipo == 'expediente'
-        query_normalizada = query_general.upper()
-        expedientes = expedientes.filter(
-            Q(codigo__icontains=query_normalizada) |
+
+        # Solo agregamos a los que coincidieron directamente
+        for v in vinculos.distinct():
+            docs = v.persona.identificaciones.all()
+            data.append({
+                'expediente_id': v.expediente.id,
+                'expediente_codigo': v.expediente.codigo,
+                'oficina': v.expediente.oficina.nombre,
+                'fecha_ingreso': v.expediente.fecha_ingreso.strftime("%d/%m/%Y"),
+                'persona_id': v.persona.id,
+                'persona_nombre': f"{v.persona.primer_nombre or ''} {v.persona.segundo_nombre or ''} {v.persona.primer_apellido or ''} {v.persona.segundo_apellido or ''}".strip(),
+                'persona_aliases': ", ".join([a.alias for a in v.persona.aliases.all()]),
+                'documento': ", ".join([f"{d.tipo_documento.nombre}: {d.numero}" for d in docs]) if docs else "---",
+                'nacionalidad_cod': v.persona.nacionalidad.codigo_alpha2 if v.persona.nacionalidad else '---',
+                'rol': v.get_rol_display()
+            })
+
+    # =========================================================
+    # CASO B: BÚSQUEDA POR EXPEDIENTE (Mantiene el comportamiento grupal)
+    # =========================================================
+    else: 
+        query_norm = query_general.upper()
+        expedientes = Expediente.objects.filter(
+            Q(codigo__icontains=query_norm) |
             Q(observaciones__icontains=query_general) |
-            Q(oficina__nombre__icontains=query_general) |
-            Q(oficina__codigo__icontains=query_general)
-        )
+            Q(oficina__nombre__icontains=query_general)
+        ).select_related('oficina').distinct()
 
-    # --- PROCESAMIENTO DE RESULTADOS PARA JSON ---
-    data = []
-    for exp in expedientes:
-        vias = ExpedientePersona.objects.filter(expediente=exp).select_related(
-            'persona', 'persona__nacionalidad'
-        ).prefetch_related('persona__identificaciones__tipo_documento', 'persona__aliases')
-        
-        if vias.exists():
-            for v in vias:
-                nombre_completo = f"{v.persona.primer_nombre or ''} {v.persona.segundo_nombre or ''} {v.persona.primer_apellido or ''} {v.persona.segundo_apellido or ''}".strip()
-                
-                docs_list = v.persona.identificaciones.all()
-                doc_string = ", ".join([f"{d.tipo_documento.nombre}: {d.numero}" for d in docs_list]) if docs_list else "---"
-                
-                alias_list = v.persona.aliases.all()
-                alias_string = ", ".join([a.alias for a in alias_list]) if alias_list else ""
-
+        for exp in expedientes:
+            vias = ExpedientePersona.objects.filter(expediente=exp).select_related(
+                'persona', 'persona__nacionalidad'
+            ).prefetch_related('persona__identificaciones__tipo_documento', 'persona__aliases')
+            
+            if vias.exists():
+                for v in vias:
+                    docs = v.persona.identificaciones.all()
+                    data.append({
+                        'expediente_id': exp.id,
+                        'expediente_codigo': exp.codigo,
+                        'oficina': exp.oficina.nombre,
+                        'fecha_ingreso': exp.fecha_ingreso.strftime("%d/%m/%Y"),
+                        'persona_id': v.persona.id,
+                        'persona_nombre': f"{v.persona.primer_nombre or ''} {v.persona.primer_apellido or ''}".strip(),
+                        'persona_aliases': ", ".join([a.alias for a in v.persona.aliases.all()]),
+                        'documento': ", ".join([f"{d.tipo_documento.nombre}: {d.numero}" for d in docs]) if docs else "---",
+                        'nacionalidad_cod': v.persona.nacionalidad.codigo_alpha2 if v.persona.nacionalidad else '---',
+                        'rol': v.get_rol_display()
+                    })
+            else:
+                # Si el expediente está vacío
                 data.append({
                     'expediente_id': exp.id,
                     'expediente_codigo': exp.codigo,
                     'oficina': exp.oficina.nombre,
                     'fecha_ingreso': exp.fecha_ingreso.strftime("%d/%m/%Y"),
-                    'persona_id': v.persona.id,
-                    'persona_nombre': nombre_completo,
-                    'persona_aliases': alias_string,
-                    'documento': doc_string,
-                    'nacionalidad_cod': v.persona.nacionalidad.codigo_alpha2 if v.persona.nacionalidad else '---',
-                    'rol': v.get_rol_display()
+                    'persona_id': '',
+                    'persona_nombre': '--- SIN ASIGNAR ---',
+                    'persona_aliases': '',
+                    'documento': '---',
+                    'nacionalidad_cod': '---',
+                    'rol': 'N/A'
                 })
-        else:
-            data.append({
-                'expediente_id': exp.id,
-                'expediente_codigo': exp.codigo,
-                'oficina': exp.oficina.nombre,
-                'fecha_ingreso': exp.fecha_ingreso.strftime("%d/%m/%Y"),
-                'persona_id': '',
-                'persona_nombre': '--- SIN ASIGNAR ---',
-                'persona_aliases': '',
-                'documento': '---',
-                'nacionalidad_cod': '---',
-                'rol': 'N/A'
-            })
             
     return JsonResponse({'resultados': data})
 

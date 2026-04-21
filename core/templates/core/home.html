@@ -8,7 +8,6 @@
     ESTRUCTURA PRINCIPAL (#main)
     Este div NO debe llevar la clase 'container' porque hereda el margen del sidebar.
 -->
-<div id="main">
 
     <!-- =============================================
          1. SECCIÓN: BUSCADOR 
@@ -50,13 +49,13 @@
                     <!-- Filtros Dirigidos: Atacan columnas indexadas para mayor velocidad -->
                     <div v-if="tipoBusqueda === 'persona'" style="margin-top: 30px; padding-top: 30px; border-top: 2px solid #5983b0;">
                         <p style="font-size: 0.8em; font-weight: bold; color: #5983b0; margin-bottom: 15px;">
-                            <i class="fas fa-filter"></i> BÚSQUEDA AVANZADA (Vía Rápida)
+                            <i class="fas fa-filter"></i> BÚSQUEDA AVANZADA
                         </p>
                         
                         <div class="row gtr-uniform">
                             <div class="col-6 col-12-mobile">
                                 <label style="font-size: 0.6em;">1er Nombre</label>
-                                <input type="text" v-model="filtrosPersona.nombre1" placeholder="Ej: MARCOS">
+                                <input type="text" v-model="filtrosPersona.nombre1" placeholder="Ej: Jane">
                             </div>
                             <div class="col-6 col-12-mobile">
                                 <label style="font-size: 0.6em;">2do Nombre</label>
@@ -64,7 +63,7 @@
                             </div>
                             <div class="col-6 col-12-mobile">
                                 <label style="font-size: 0.6em;">1er Apellido</label>
-                                <input type="text" v-model="filtrosPersona.apellido1" placeholder="Ej: GONZALEZ">
+                                <input type="text" v-model="filtrosPersona.apellido1" placeholder="Ej: Doe">
                             </div>
                             <div class="col-6 col-12-mobile">
                                 <label style="font-size: 0.6em;">2do Apellido</label>
@@ -79,7 +78,7 @@
                                 <input type="text" v-model="filtrosPersona.alias">
                             </div>
                             <div class="col-12">
-                                <button type="button" @click="buscarAvanzado" class="button primary fit icon solid fa-bolt">Ejecutar Búsqueda Avanzada</button>
+                                <button type="button" @click="buscarAvanzado" class="button primary fit icon solid fa-bolt"> Buscar</button>
                             </div>
                         </div>
                     </div>
@@ -348,7 +347,7 @@
             <div class="form-container">
                 <form @submit.prevent="guardarNuevoExpediente">
                     <div class="row gtr-uniform">
-                        <div class="col-6 col-12-mobile"><label>Código Interno</label><input placeholder="Ejemplo: BK-001" type="text" v-model="nuevoExpediente.codigo" required></div>
+                        <div class="col-6 col-12-mobile"><label>Código Interno</label><input placeholder="Ejemplo: BK001" type="text" v-model="nuevoExpediente.codigo" required></div>
                         <div class="col-6 col-12-mobile">
                             <label>Oficina Solicitante</label>
                             <select v-model="nuevoExpediente.oficina_id" required>
@@ -357,7 +356,7 @@
                             </select>
                         </div>
                         <div class="col-12"><label>Observaciones Iniciales</label><textarea v-model="nuevoExpediente.observaciones" rows="4"></textarea></div>
-                        <div class="col-12"><input type="submit" value="Finalizar Apertura" class="button primary fit"></div>
+                        <div class="col-12"><input type="submit" value="Crear Expediente" class="button primary fit"></div>
                     </div>
                 </form>
             </div>
@@ -449,6 +448,5 @@
         </div>
     </section>
 
-</div> <!-- FIN DEL DIV #main -->
 
 {% endblock %}

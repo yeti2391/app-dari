@@ -7,9 +7,27 @@
 
         <!-- Logo -->
         <div id="logo">
-            <span class="image avatar48"><img src="{% static 'core/img/LogoDGLCCO.webp' %}" alt="Logo DGLCCO" /></span>
-            <h1 id="title">Jane Doe</h1>
-            <p>DARI</p>
+            <span class="image avatar48">
+                <img src="{% static 'core/img/LogoDGLCCO.webp' %}" alt="Logo DGLCCO" />
+            </span>
+            
+            <!-- Cargamos Nombre y Apellido del usuario logueado -->
+            <h1 id="title">
+                {% if user.get_full_name %}
+                    {{ user.get_full_name }}
+                {% else %}
+                    {{ user.username }}
+                {% endif %}
+            </h1>
+
+            <!-- Cargamos el grupo (o grupos) del usuario -->
+            <p>
+                {% for group in user.groups.all %}
+                    {{ group.name }}{% if not forloop.last %}, {% endif %}
+                {% empty %}
+                    Sin Grupo Asignado
+                {% endfor %}
+            </p>
         </div>
 
         <!-- Nav Modificado para Vue -->

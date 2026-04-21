@@ -211,28 +211,30 @@ input, select, textarea {
 	}
 
 /* Container */
+/* Container - Ajustado para no desbordar */
+.container {
+    margin-left: auto !important;
+    margin-right: auto !important;
+    width: 90%;             /* Usa el 90% del espacio disponible */
+    max-width: 1250px;      /* Límite para que no se estire demasiado en monitores 4K */
+    padding-left: 40px;     /* IGUAL al margin-left negativo de la .row */
+    padding-right: 0;
+    box-sizing: border-box;
+}
 
-	.container {
-		margin: 0 auto;
-		max-width: 100%;
-		width: 1400px;
-	}
+@media screen and (min-width: 961px) and (max-width: 1880px) {
+    .container {
+        width: 90%; /* En lugar de 1200px fijos, usamos porcentaje del espacio libre */
+        max-width: 1100px;
+    }
+}
 
-		@media screen and (min-width: 961px) and (max-width: 1880px) {
-
-			.container {
-				width: 1200px;
-			}
-
-		}
-
-		@media screen and (min-width: 961px) and (max-width: 1620px) {
-
-			.container {
-				width: 960px;
-			}
-
-		}
+@media screen and (max-width: 960px) {
+    .container {
+        max-width: calc(100% - 40px);
+        width: 100%;
+    }
+}
 
 		@media screen and (min-width: 961px) and (max-width: 1320px) {
 
@@ -2219,23 +2221,27 @@ input, select, textarea {
 
 /* Main */
 
-	#main {
-		margin-left: 375px;
-	}
+/* Main */
+#main {
+    margin-left: 375px;
+    padding: 0;
+    width: auto;
+    display: block;
+    overflow-x: hidden; 
+}
 
-		#main > section {
-			margin: 0;
-			overflow: hidden;
-			padding: 4em 0;
-			box-shadow: inset 0 1px 0 0 rgba(0, 0, 0, 0.05), inset 0 0.1em 0.1em 0 rgba(0, 0, 0, 0.025);
-			text-align: center;
-			background-image: url("images/overlay.png");
-			min-height: 100vh;            /* Ocupa el 100% de la altura de la ventana */
-			display: flex;                /* Activamos flexbox */
-			flex-direction: column;       /* Orientación vertical */
-			justify-content: center;      /* Centra el contenido verticalmente */
-			align-items: center;          /* Centra el contenido horizontalmente */
-		}
+#main > section {
+    margin: 0;
+    padding: 4em 0;
+    text-align: center;
+    background-image: url("images/overlay.png");
+    min-height: 100vh;
+    display: block;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center; /* Centra el container horizontalmente */
+    width: 100%; 
+}
 
 			#main > section.dark {
 				color: #ddd;
@@ -2295,16 +2301,15 @@ input, select, textarea {
 
 		/* Header */
 
-			#header {
-				width: 300px;
-			}
+		
+    #header {
+        width: 300px;
+    }
 
-		/* Footer */
-
-			#footer {
-				margin-left: 300px;
-				
-			}
+    #main, #footer {
+        margin-left: 300px; /* Sincronizado con el ancho del header */
+    }
+}
 
 			/* Eliminar puntos y sangría del footer */
 				.footer-list {
@@ -2335,8 +2340,6 @@ input, select, textarea {
 			#main {
 				margin-left: 300px;
 			}
-
-	}
 
 /* Normal */
 
@@ -2821,10 +2824,15 @@ input:checked + .slider:before { transform: translateX(30px); }
     box-shadow: 0 4px 15px rgba(0,0,0,0.05);
     overflow-x: auto;
     margin-top: 2em;
+	width: 100%;
+    max-width: 100%;
+    overflow-x: auto; /* Permite scroll solo DENTRO de la tabla si es muy ancha */
+    -webkit-overflow-scrolling: touch;
 }
 
 .results-table {
     width: 100%;
+	min-width: 600px;
     border-collapse: collapse;
     font-size: 0.8em; /* Más pequeño para que entre más info */
 }
