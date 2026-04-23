@@ -7,18 +7,7 @@ from .base import *
 # core/middleware.py
 from django.http import HttpResponseForbidden
 
-ALLOWED_IPS = ['10.42.1.100']  # la IP que quieres permitir
-
-class RestrictIPMiddleware:
-    def __init__(self, get_response):
-        self.get_response = get_response
-
-    def __call__(self, request):
-        ip = request.META.get('REMOTE_ADDR')
-        if ip not in ALLOWED_IPS:
-            return HttpResponseForbidden("Acceso denegado")
-        return self.get_response(request)
-
+ALLOWED_IPS = ['10.42.1.59', 'localhost', '127.0.0.1', '0.0.0.0'] # la IP que quieres permitir
 
 DEBUG = True
 
