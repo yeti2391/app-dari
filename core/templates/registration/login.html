@@ -1,11 +1,16 @@
 {% extends "core/base/base.html" %}
+{% load static %}
 {% block title %}Iniciar Sesión - DARI{% endblock %}
 
 {% block body %}
 <div id="main" style="margin-left: 0;"> <!-- Quitamos el margen del sidebar para el login -->
     <section id="login">
         <div class="container" style="max-width: 400px;">
-            <header><h2>Acceso al Sistema</h2></header>
+            <header>
+                <span class="image fit">
+                    <img src="{% static 'core/img/LogoDGLCCO.webp' %}" alt="Logo DGLCCO" />
+                </span>
+            </header>
             <div class="form-container">
                 <form method="post">
                     {% csrf_token %}
@@ -17,7 +22,7 @@
                             <input type="password" name="password" placeholder="Contraseña" required>
                         </div>
                         <div class="col-12">
-                            <button type="submit" class="button primary fit">Entrar</button>
+                            <button type="submit" class="button">Entrar</button>
                         </div>
                     </div>
                 </form>
