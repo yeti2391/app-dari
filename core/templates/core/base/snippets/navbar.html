@@ -20,13 +20,31 @@
                 {% endif %}
             </h1>
 
-            <!-- Cargamos el grupo (o grupos) del usuario -->
-            <p>
-                {% for group in user.groups.all %}
-                    {{ group.name }}{% if not forloop.last %}, {% endif %}
-                {% empty %}
-                    Sin Grupo Asignado
-                {% endfor %}
+            <!-- Cargamos el grupo (u oficina) del usuario -->
+            <p style="display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-top: 5px;">
+        
+                <!-- Icono de Salida (Formulario POST oculto para seguridad) -->
+                <form id="logout-form" method="post" action="{% url 'logout' %}" style="display: none;">
+                    {% csrf_token %}
+                </form>
+                
+                <a href="#" onclick="document.getElementById('logout-form').submit(); return false;" 
+                title="Cerrar Sesión" 
+                style="border: none; color: rgba(255,255,255,0.5); font-size: 0.75em; transition: color 0.3s;">
+                    <i class="fas fa-sign-out-alt"></i>
+                </a>
+
+                <!-- Separador visual pequeño -->
+                <span style="color: rgba(255,255,255,0.2);">|</span>
+
+                <!-- Nombre del Grupo -->
+                <span>
+                    {% for group in user.groups.all %}
+                        {{ group.name }}{% if not forloop.last %}, {% endif %}
+                    {% empty %}
+                        Sin Grupo
+                    {% endfor %}
+                </span>
             </p>
         </div>
 

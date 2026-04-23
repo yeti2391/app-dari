@@ -2127,6 +2127,10 @@ input, select, textarea {
 			filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.7)); /* Agrega un resplandor blanco alrededor de la imagen */
 			border-radius: 50%; /* Hace que la imagen sea circular */
 		}
+		#logo a:hover {
+			color: #e74c3c !important; /* Color rojo al pasar el mouse */
+			cursor: pointer;
+		}
 
 	#nav ul {
 		list-style: none;

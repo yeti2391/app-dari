@@ -21,6 +21,16 @@ LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'login_success' # Apunta a la vista que creamos arriba
 LOGOUT_REDIRECT_URL = 'login'
 
+# Duración de la sesión en segundos (30 min * 60 seg = 1800)
+SESSION_COOKIE_AGE = 1800
+# Hacer que la sesión expire al cerrar el navegador (opcional, recomendado por seguridad)
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+
+# Muy importante: Reinicia el contador de los 30 min cada vez que el usuario hace un clic
+# Si no pones esto, la sesión morirá a los 30 min exactos del login, sin importar si está trabajando
+SESSION_SAVE_EVERY_REQUEST = True
+
+
 # Application definition
 
 INSTALLED_APPS = [
