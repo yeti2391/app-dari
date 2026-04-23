@@ -4,10 +4,10 @@ Django settings for DARI project.
 PARA PRUEBAS BASES DE DATOS EN SQLITE, NO USAR EN PRODUCCIÓN
 """
 from .base import *
-# core/middleware.py
 from django.http import HttpResponseForbidden
 
 ALLOWED_IPS = ['10.42.1.59', 'localhost', '127.0.0.1', '0.0.0.0'] # la IP que quieres permitir
+ALLOWED_HOSTS = ['10.42.1.59', 'localhost', '127.0.0.1', '0.0.0.0']
 
 DEBUG = True
 

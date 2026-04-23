@@ -12,7 +12,7 @@ from .base import *
 # Leemos el modo Debug desde el .env
 DEBUG = os.getenv('DEBUG') == 'True'
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['10.42.1.59', 'localhost', '127.0.0.1', '0.0.0.0'] #cambiar por la IP de la computadora usada de host
 
 DATABASES = {
     'default': {

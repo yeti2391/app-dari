@@ -1,7 +1,7 @@
 # core/middleware.py
 from django.http import HttpResponseForbidden
 
-ALLOWED_IPS = ['10.42.1.55', '10.42.1.59', '10.42.1.62', '127.0.0.1']  # las IPs que quieres permitir en caso de querer un rango en lugar de IP especificas usar '10.42.1.0/24'
+ALLOWED_IPS = ['10.42.1.55', '10.42.1.59', '10.42.1.62', '127.0.0.1', 'localhost', '0.0.0.0']  # las IPs que quieres permitir en caso de querer un rango en lugar de IP especificas usar '10.42.1.0/24'
 
 class RestrictIPMiddleware:
     def __init__(self, get_response):

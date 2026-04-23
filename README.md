@@ -111,7 +111,8 @@ El sistema facilita el seguimiento completo del ciclo de vida de los expedientes
 7. **Acceder a la aplicación**
    - Abrir navegador en: `http://localhost:6767`
    - desde otra pc: `10.42.1.255:6767` # se utiliza la ip donde este corriendo el servidor de django y el puerto asignado anteriormente
-
+    # también es importante configurar la IP de la computadora usada para correr la app en Allowed_Hosts en DARI.settings.local y testing para poder acceder a la app desde otra pc.
+   
 ## Uso
 
 ### Creación de Expedientes

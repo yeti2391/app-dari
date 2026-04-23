@@ -325,27 +325,32 @@ def actualizar_alfresco(request, id):
 @csrf_exempt
 def crear_expediente(request):
     if request.method == 'POST':
-        data = json.loads(request.body)
-        
-        # 1. Normalizar la entrada para la validación
-        codigo_nuevo = data['codigo'].upper().strip()
-        
-        # 2. Verificar si ya existe (usamos __iexact para ignorar mayúsculas/minúsculas)
-        if Expediente.objects.filter(codigo__iexact=codigo_nuevo).exists():
-            return JsonResponse({
-                'status': 'error', 
-                'message': f'El código de expediente "{codigo_nuevo}" ya existe en el sistema.'
-            }, status=400) # Devolvemos un error 400 (Bad Request)
-        
         try:
+            data = json.loads(request.body)
+            
+            # 1. Normalizar y Validar
+            codigo_nuevo = data['codigo'].upper().strip()
+            if Expediente.objects.filter(codigo__iexact=codigo_nuevo).exists():
+                return JsonResponse({
+                    'status': 'error', 
+                    'message': f'El expediente "{codigo_nuevo}" ya existe.'
+                }, status=400)
+            
+            # 2. Obtener Oficina
             oficina = Oficina.objects.get(id=data['oficina_id'])
+            
+            # 3. CREACIÓN CON USUARIO AUTOMÁTICO
             nuevo_exp = Expediente.objects.create(
                 codigo=codigo_nuevo,
                 fecha_ingreso=data['fecha'],
                 oficina=oficina,
                 observaciones=data.get('observaciones', ''),
+                # Asignamos el usuario que hace la petición (auth_user)
+                created_by=request.user 
             )
+            
             return JsonResponse({'status': 'ok', 'id': nuevo_exp.id})
+            
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
