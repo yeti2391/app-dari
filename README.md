@@ -105,11 +105,12 @@ El sistema facilita el seguimiento completo del ciclo de vida de los expedientes
 
 6. **Ejecutar el servidor**
    ```bash
-   python manage.py runserver
+   python manage.py runserver 0.0.0.0:6767 # se puede cambiar 6767 por el puerto que sea habilitado
    ```
 
 7. **Acceder a la aplicación**
-   - Abrir navegador en: `http://localhost:8000`
+   - Abrir navegador en: `http://localhost:6767`
+   - desde otra pc: `10.42.1.255:6767` # se utiliza la ip donde este corriendo el servidor de django y el puerto asignado anteriormente
 
 ## Uso
 
