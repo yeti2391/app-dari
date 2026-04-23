@@ -415,7 +415,8 @@ def vincular_persona(request, id):
                     primer_apellido=data.get('primer_apellido'),
                     segundo_apellido=data.get('segundo_apellido', ''),
                     fecha_nacimiento=data.get('fecha_nacimiento') or None,
-                    nacionalidad=pais
+                    nacionalidad=pais,
+                    created_by=request.user 
                 )
                 
                 # Creamos su primera identificación si hay datos
