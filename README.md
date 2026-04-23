@@ -105,7 +105,7 @@ El sistema facilita el seguimiento completo del ciclo de vida de los expedientes
 
 6. **Ejecutar el servidor**
    ```bash
-   python manage.py runserver 0.0.0.0:6767 # se puede cambiar 6767 por el puerto que sea habilitado
+   python manage.py runserver 0.0.0.0:6767 --settings=DARI.settings.local # se puede cambiar 6767 por el puerto que sea habilitado y en caso de querer usar una BD solo de testing cambiar a --settings=DARI.settings.testing
    ```
 
 7. **Acceder a la aplicación**
