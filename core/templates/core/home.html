@@ -286,7 +286,7 @@
             <header>
                 <a href="#" @click.prevent="seccionActual = 'buscar'"><i class="fas fa-arrow-left"></i> Volver</a>
                 <h2 class="uppercase">{{ personaPerfil.primer_nombre }} {{ personaPerfil.segundo_nombre }} {{ personaPerfil.primer_apellido }} {{ personaPerfil.segundo_apellido }}</h2>
-                <p><strong>NACIONALIDAD:</strong> {{ personaPerfil.nacionalidad }} | <strong>ALIAS:</strong> {{ personaPerfil.aliases.join(', ') }}</p>
+                <p><strong> F. NACIMIENTO: {{ personaPerfil.fecha_nacimiento }} | NACIONALIDAD:</strong> {{ personaPerfil.nacionalidad }} | <strong>ALIAS:</strong> {{ personaPerfil.aliases.join(', ') }}</p>
             </header>
 
             <div class="row">

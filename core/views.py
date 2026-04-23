@@ -85,7 +85,7 @@ def buscar_expedientes(request):
                 'persona_nombre': f"{v.persona.primer_nombre or ''} {v.persona.segundo_nombre or ''} {v.persona.primer_apellido or ''} {v.persona.segundo_apellido or ''}".strip(),
                 'persona_aliases': ", ".join([a.alias for a in v.persona.aliases.all()]),
                 'documento': ", ".join([f"{d.tipo_documento.nombre}: {d.numero}" for d in docs]) if docs else "---",
-                'nacionalidad_cod': v.persona.nacionalidad.codigo_alpha2 if v.persona.nacionalidad else '---',
+                'nacionalidad_cod': v.persona.nacionalidad.codigo_alpha3 if v.persona.nacionalidad else '---',
                 'rol': v.get_rol_display()
             })
 
@@ -117,7 +117,7 @@ def buscar_expedientes(request):
                         'persona_nombre': f"{v.persona.primer_nombre or ''} {v.persona.primer_apellido or ''}".strip(),
                         'persona_aliases': ", ".join([a.alias for a in v.persona.aliases.all()]),
                         'documento': ", ".join([f"{d.tipo_documento.nombre}: {d.numero}" for d in docs]) if docs else "---",
-                        'nacionalidad_cod': v.persona.nacionalidad.codigo_alpha2 if v.persona.nacionalidad else '---',
+                        'nacionalidad_cod': v.persona.nacionalidad.codigo_alpha3 if v.persona.nacionalidad else '---',
                         'rol': v.get_rol_display()
                     })
             else:
@@ -277,6 +277,7 @@ def detalle_persona(request, id):
         'segundo_nombre': persona.segundo_nombre,
         'primer_apellido': persona.primer_apellido,
         'segundo_apellido': persona.segundo_apellido,
+        'fecha_nacimiento': persona.fecha_nacimiento.strftime("%d/%m/%Y") if persona.fecha_nacimiento else "N/A",
         'nacionalidad': persona.nacionalidad.nombre if persona.nacionalidad else 'N/A',
         'identificaciones': identificaciones,
         'aliases': aliases,

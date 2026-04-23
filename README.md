@@ -81,6 +81,7 @@ El sistema facilita el seguimiento completo del ciclo de vida de los expedientes
    ```bash
    python -m venv env
    # En Windows:
+   Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
    env\Scripts\activate
    # En Linux/Mac:
    source env/bin/activate

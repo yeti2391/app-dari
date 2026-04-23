@@ -13,7 +13,7 @@ class Pais(models.Model):
     nombre = models.CharField(max_length=100)
 
     def __str__(self):
-        return f"{self.nombre} ({self.codigo_alpha2})"
+        return f"{self.nombre} ({self.codigo_alpha3})"
 
     class Meta:
         verbose_name_plural = "Países"
