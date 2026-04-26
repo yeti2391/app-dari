@@ -156,12 +156,42 @@
                 <h2>Expediente: {{ expediente.codigo }}</h2>
             </header>
 
-            <!-- Box de Observaciones (Ancho Completo) -->
+            <!-- Box de Observaciones  -->
             <div class="row" style="margin-bottom: 2em;">
                 <div class="col-12">
                     <div class="form-container" style="padding: 1.5em; text-align: left; border-left: 5px solid #5983b0;">
-                        <h3 style="font-size: 0.9em; margin-bottom: 10px; color: #5983b0;"><i class="fas fa-sticky-note"></i> Observaciones Generales:</h3>
-                        <p style="margin: 0; line-height: 1.6; color: #444; font-style: italic;">{{ expediente.observaciones || 'Sin observaciones registradas.' }}</p>
+                        
+                        <!-- Título con Icono de Lápiz -->
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <h3 style="font-size: 0.9em; color: #5983b0; margin: 0;">
+                                <i class="fas fa-sticky-note"></i> Observaciones del Expediente:
+                            </h3>
+                            
+                            <!-- Icono del Lápiz (Solo se ve si no estamos editando) -->
+                            <a href="#" v-if="!editandoObs" @click.prevent="activarEdicionObs" 
+                            style="border: none; color: #888;" title="Editar observaciones">
+                                <i class="fas fa-pencil-alt"></i>
+                            </a>
+                        </div>
+
+                        <!-- VISTA: Muestra el texto normal -->
+                        <p v-if="!editandoObs" style="margin: 0; line-height: 1.6; color: #444; font-style: italic;">
+                            {{ expediente.observaciones ? expediente.observaciones : 'Sin observaciones registradas.' }}
+                        </p>
+
+                        <!-- EDICIÓN: Muestra el área de texto y botones -->
+                        <div v-if="editandoObs">
+                            <textarea v-model="obsTemporal" rows="4" style="width: 100%; margin-bottom: 10px; font-size: 0.8em;"></textarea>
+                            <div style="display: flex; gap: 10px;">
+                                <button class="button small primary" @click="guardarEdicionObs">
+                                    <i class="fas fa-check"></i> Guardar Cambios
+                                </button>
+                                <button class="button small alt" @click="cancelarEdicionObs">
+                                    Cancelar
+                                </button>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             </div>

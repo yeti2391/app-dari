@@ -77,6 +77,9 @@
 								personas: [],
 								movimientos: []
 							},
+							// Editar observaciones del expediente
+							editandoObs: false,
+							obsTemporal: '',
 							
 							// Formulario Crear Expediente
 							nuevoExpediente: {
@@ -260,6 +263,38 @@
 							} catch (error) { alert("Error al cargar detalles"); }
 							finally { this.cargando = false; }
 						},
+						// Editar observaciones en detalle del expediente
+						activarEdicionObs() {
+							this.obsTemporal = this.expediente.observaciones; // Copiamos el texto actual
+							this.editandoObs = true; // Cambiamos a modo edición
+						},
+
+						cancelarEdicionObs() {
+							this.editandoObs = false;
+							this.obsTemporal = '';
+						},
+
+						async guardarEdicionObs() {
+							try {
+								const response = await fetch(`/DARI/api/expediente/${this.expediente.id}/update-obs/`, {
+									method: 'POST',
+									headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+									body: JSON.stringify({ observaciones: this.obsTemporal })
+								});
+
+								if (response.ok) {
+									this.expediente.observaciones = this.obsTemporal; // Actualizamos la vista real
+									this.editandoObs = false;
+									alert("Las observaciones han sido actualizadas correctamente.");
+								} else {
+									alert("Error: No se pudo guardar la información en el servidor.");
+								}
+							} catch (error) {
+								console.error("Error en la petición:", error);
+        						alert("Error: No se pudo contactar con el servidor.");
+							}
+						},
+
 						abrirRegistroMovimiento() {
 							// Pre-configuramos el formulario de movimiento
 							this.nuevoMovimiento = {

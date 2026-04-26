@@ -474,6 +474,20 @@ def desvincular_persona(request, id): # 'id' es el ID del expediente
                 return JsonResponse({'status': 'error', 'message': 'La vinculación no existe'}, status=404)
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+        
+@login_required
+@user_passes_test(es_dari) 
+@csrf_exempt
+def actualizar_obs_expediente(request, id):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            exp = get_object_or_404(Expediente, id=id)
+            exp.observaciones = data.get('observaciones', '')
+            exp.save()
+            return JsonResponse({'status': 'ok'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
 @login_required
 @user_passes_test(es_dari)       
