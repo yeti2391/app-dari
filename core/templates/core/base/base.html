@@ -45,459 +45,335 @@
 		<script>
 			const { createApp } = Vue
 
-				createApp({
-					data() {
-						return {
-							seccionActual: 'buscar',
-							oficinas: [], 
-							queryBusqueda: '', //revisar sino es redundante
-							tipoBusqueda: 'persona', // Valor por defecto
-							resultados: [],
-							paginaActual: 1,
-							resultadosPorPagina: 25,
-							// para el registro de movimientos:
-							historialCompleto: [], // Para la tabla excel
-          					ultimoDestinoId: null, // Para autocompletar origen
+			createApp({
+				data() {
+					return {
+						// --- NAVEGACIÓN Y ESTADO ---
+						seccionActual: 'buscar',
+						cargando: false,
 
-							//filtros avanzados de busqueda de persona
-							filtrosPersona: {
-								nombre1: '',
-								nombre2: '',
-								apellido1: '',
-								apellido2: '',
-								documento: '',
-								alias: ''
-							},
-							
-							// Detalles del expediente seleccionado
-							expediente: {
-								id: null,
-								codigo: '',
-								subido_alfresco: false,
-								personas: [],
-								movimientos: []
-							},
-							// Editar observaciones del expediente
-							editandoObs: false,
-							obsTemporal: '',
-							
-							// Formulario Crear Expediente
-							nuevoExpediente: {
-								codigo: '',
-								oficina_id: '',
-								fecha: new Date().toISOString().split('T')[0],
-								observaciones: ''
-							},
-							expedientesRecientes: [],
-
-							paises: [],
-							tiposDocumento: [],
-							queryPersonaExistente: '',
-							resultadosSugeridos: [],
-							nuevaPersona: {
-								primer_nombre: '', segundo_nombre: '',
-								primer_apellido: '', segundo_apellido: '',
-								alias: '',
-								tipo_documento_id: '', documento: '',
-								fecha_nacimiento: '',
-								nacionalidad_id: '', nacionalidad_nombre: '', // para el filtro
-								rol: 'indagado'
-							},
-							nuevoAliasPerfil: '',
-							personasVinculadas: [],
-							cargando: false,
-							
-							// DETALLES DE PERSONA
-							personaPerfil: {
-								fecha_nacimiento: '',
-								identificaciones: [],
-								expedientes: [],
-								aliases: []
-							},
-							nuevoDocPerfil: { tipo_documento_id: '', numero: '' },
-
-							//para movimientos de expedientes:
-							// En data()
-							nuevoMovimiento: {
-								codigo_expediente: '', 
-								origen_id: '', 
-								destino_id: '', 
-								fecha: '', 
-								entregado_por: '', 
-								recibido_por: '', 
-								observaciones: ''
-							},
-							historialBusqueda: [],
-							tiposMovimiento: [],
-
-						}
-					},
-					computed: {
-					// Esta función corta el array de resultados según la página
-						resultadosPaginados() {
-							let inicio = (this.paginaActual - 1) * this.resultadosPorPagina;
-							let fin = inicio + this.resultadosPorPagina;
-							return this.resultados.slice(inicio, fin);
-						},
-						totalPaginas() {
-							return Math.ceil(this.resultados.length / this.resultadosPorPagina);
-						},
-						// para movimientos de expedientes:
-						 movimientosResumidos() {
-							return this.expediente.movimientos.slice(0, 3);
-						},
-					},
-					
-					mounted() {
-						this.cargarOficinas();
-						this.cargarPaises();
-						this.cargarTiposDocumento();
-						this.cargarRecientes();
+						// --- BÚSQUEDA ---
+						tipoBusqueda: 'persona', // 'persona' o 'expediente'
+						queryBusqueda: '',       // Término de búsqueda rápida
+						resultados: [],          // Resultados devueltos por el server
+						paginaActual: 1,
+						resultadosPorPagina: 25,
 						
-					},
-
-					methods: {
-						async cargarOficinas() {
-							try {
-								const response = await fetch('/DARI/api/oficinas/');
-								const data = await response.json();
-								this.oficinas = data.oficinas;
-							} catch (e) { console.error("Error cargando oficinas"); }
+						// Filtros para Búsqueda Avanzada
+						filtrosPersona: {
+							nombre1: '', nombre2: '',
+							apellido1: '', apellido2: '',
+							documento: '', alias: ''
 						},
 
-						async verPerfilPersona(id) {
-							try {
-								const response = await fetch(`/DARI/api/persona/${id}/`);
-								this.personaPerfil = await response.json();
-								this.seccionActual = 'persona_perfil';
-							} catch (error) { alert("Error al cargar perfil"); }
+						// --- GESTIÓN DE EXPEDIENTES ---
+						expediente: {
+							id: null, codigo: '', observaciones: '',
+							subido_alfresco: false, personas: [], movimientos: []
 						},
-
-						async guardarNuevoDocPerfil() {
-							try {
-								const response = await fetch(`/DARI/api/persona/${this.personaPerfil.id}/identificacion/`, {
-									method: 'POST',
-									headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
-									body: JSON.stringify(this.nuevoDocPerfil)
-								});
-								if (response.ok) {
-									alert("Documento agregado");
-									this.verPerfilPersona(this.personaPerfil.id); // Recargar
-									this.nuevoDocPerfil = { tipo_documento_id: '', numero: '' };
-								} else {
-									const data = await response.json();
-									alert(data.message);
-								}
-							} catch (error) { alert("Error de conexión"); }
-						},
-
-						// 1. Búsqueda Rápida (Usa la caja de arriba)
-						async buscar() {
-							if (!this.queryBusqueda.trim()) return;
-							this.cargando = true;
-							this.paginaActual = 1;
-							// Limpiamos filtros avanzados para que no interfieran
-							this.filtrosPersona = { nombre1: '', nombre2: '', apellido1: '', apellido2: '', documento: '', alias: '' };
-							
-							try {
-								const url = `/DARI/api/buscar/?tipo=${this.tipoBusqueda}&q=${encodeURIComponent(this.queryBusqueda)}&mode=quick`;
-								const response = await fetch(url);
-								const data = await response.json();
-								this.resultados = data.resultados;
-							} catch (e) { console.error(e); }
-							finally { this.cargando = false; }
-						},
-
-						// 2. Búsqueda Avanzada (Usa los filtros específicos)
-						async buscarAvanzado() {
-							this.cargando = true;
-							this.paginaActual = 1;
-							this.queryBusqueda = ''; // Limpiamos la búsqueda general
-							
-							try {
-								let url = `/DARI/api/buscar/?tipo=persona&mode=advanced`;
-								url += `&n1=${encodeURIComponent(this.filtrosPersona.nombre1)}` +
-									`&n2=${encodeURIComponent(this.filtrosPersona.nombre2)}` +
-									`&a1=${encodeURIComponent(this.filtrosPersona.apellido1)}` +
-									`&a2=${encodeURIComponent(this.filtrosPersona.apellido2)}` +
-									`&doc=${encodeURIComponent(this.filtrosPersona.documento)}` +
-									`&alias=${encodeURIComponent(this.filtrosPersona.alias)}`;
-
-								const response = await fetch(url);
-								const data = await response.json();
-								this.resultados = data.resultados;
-							} catch (e) { console.error(e); }
-							finally { this.cargando = false; }
+						expedientesRecientes: [], // Lista de los últimos 10
+						nuevoExpediente: {
+							codigo: '', oficina_id: '',
+							fecha: new Date().toISOString().split('T')[0],
+							observaciones: ''
 						},
 						
-						async cargarPaises() {
-							const res = await fetch('/DARI/api/paises/');
-							const data = await res.json();
-							this.paises = data.paises;
-						},
-						async cargarTiposDocumento() {
-							const res = await fetch('/DARI/api/tipos-documento/');
-							const data = await res.json();
-							this.tiposDocumento = data.tipos;
-						},
+						// Edición de observaciones
+						editandoObs: false,
+						obsTemporal: '',
 
-						async verDetalles(id) {
-							if (this.cargando) return; // Evitar múltiples llamadas
-							this.cargando = true;
-							try {
-								const response = await fetch(`/DARI/api/expediente/${id}/`);
-								const data = await response.json();
-								this.expediente = data;
-								this.personasVinculadas = data.personas;
-								
-								// Determinamos la última oficina donde estuvo el expediente
-								if (data.movimientos.length > 0) {
-									// El primer movimiento del array (ordenado por -fecha) es el último destino
-									this.ultimoDestinoId = data.movimientos[0].destino_id;
-								} else {
-									// Si no tiene movimientos, el origen por defecto es la oficina de creación
-									this.ultimoDestinoId = data.oficina_id; 
-								}
-
-								this.seccionActual = 'detalles';
-							} catch (error) { alert("Error al cargar detalles"); }
-							finally { this.cargando = false; }
+						// --- GESTIÓN DE PERSONAS ---
+						personasVinculadas: [], // Personas del expediente actual
+						nuevaPersona: {
+							primer_nombre: '', segundo_nombre: '',
+							primer_apellido: '', segundo_apellido: '',
+							alias: '', tipo_documento_id: '', documento: '',
+							fecha_nacimiento: '', nacionalidad_nombre: '', rol: 'indagado'
 						},
-						// Editar observaciones en detalle del expediente
-						activarEdicionObs() {
-							this.obsTemporal = this.expediente.observaciones; // Copiamos el texto actual
-							this.editandoObs = true; // Cambiamos a modo edición
+						// Buscador de personas existentes
+						queryPersonaExistente: '',
+						resultadosSugeridos: [],
+
+						// Perfil de Persona (Ficha Individual)
+						personaPerfil: {
+							id: null, primer_nombre: '', segundo_nombre: '',
+							primer_apellido: '', segundo_apellido: '',
+							fecha_nacimiento: '', nacionalidad: '',
+							identificaciones: [], expedientes: [], aliases: []
 						},
+						nuevoDocPerfil: { tipo_documento_id: '', numero: '' },
+						nuevoAliasPerfil: '',
+						editandoPersona: false, // Toggle edición biográfica
+						personaEdit: {},        // Copia para el formulario de edición
 
-						cancelarEdicionObs() {
-							this.editandoObs = false;
-							this.obsTemporal = '';
+						// --- MOVIMIENTOS (TRASLADOS) ---
+						nuevoMovimiento: {
+							codigo_expediente: '', origen_id: '', destino_id: '',
+							fecha: '', entregado_por: '', recibido_por: '', observaciones: ''
 						},
+						ultimoDestinoId: null,
+						
+						// --- DATOS MAESTROS (Cargados desde API) ---
+						oficinas: [],
+						paises: [],
+						tiposDocumento: []
+					}
+				},
 
-						async guardarEdicionObs() {
-							try {
-								const response = await fetch(`/DARI/api/expediente/${this.expediente.id}/update-obs/`, {
-									method: 'POST',
-									headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
-									body: JSON.stringify({ observaciones: this.obsTemporal })
-								});
+				computed: {
+					// Corta los resultados para la paginación
+					resultadosPaginados() {
+						let inicio = (this.paginaActual - 1) * this.resultadosPorPagina;
+						return this.resultados.slice(inicio, inicio + this.resultadosPorPagina);
+					},
+					totalPaginas() {
+						return Math.ceil(this.resultados.length / this.resultadosPorPagina);
+					},
+					// Muestra solo los 3 movimientos más nuevos en la ficha de detalles
+					movimientosResumidos() {
+						return this.expediente.movimientos ? this.expediente.movimientos.slice(0, 3) : [];
+					}
+				},
 
-								if (response.ok) {
-									this.expediente.observaciones = this.obsTemporal; // Actualizamos la vista real
-									this.editandoObs = false;
-									alert("Las observaciones han sido actualizadas correctamente.");
-								} else {
-									alert("Error: No se pudo guardar la información en el servidor.");
-								}
-							} catch (error) {
-								console.error("Error en la petición:", error);
-        						alert("Error: No se pudo contactar con el servidor.");
-							}
-						},
+				mounted() {
+					// Carga inicial de datos al abrir la app
+					this.cargarOficinas();
+					this.cargarPaises();
+					this.cargarTiposDocumento();
+					this.cargarRecientes();
+				},
 
-						abrirRegistroMovimiento() {
-							// Pre-configuramos el formulario de movimiento
-							this.nuevoMovimiento = {
-								codigo_expediente: this.expediente.codigo,
-								origen_id: this.ultimoDestinoId, // Auto-completado
-								destino_id: '',
-								fecha: new Date().toISOString().slice(0, 16), // Fecha y hora actual formato input
-								entregado_por: '',
-								recibido_por: '',
-								observaciones: ''
-							};
-							this.seccionActual = 'registrar_movimiento';
-						},
+				methods: {
+					// --- API HELPERS ---
+					async apiFetch(url, options = {}) {
+						// Helper para centralizar las llamadas y el prefijo /DARI/
+						const response = await fetch(`/DARI${url}`, options);
+						if (!response.ok) throw new Error('Error en la petición');
+						return await response.json();
+					},
 
-						async guardarMovimiento() {
-							const res = await fetch('/DARI/api/movimientos/registrar/', {
+					// --- MÉTODOS DE CARGA INICIAL ---
+					async cargarOficinas() {
+						try { const data = await this.apiFetch('/api/oficinas/'); this.oficinas = data.oficinas; }
+						catch (e) { console.error("Error oficinas:", e); }
+					},
+					async cargarPaises() {
+						try { const data = await this.apiFetch('/api/paises/'); this.paises = data.paises; }
+						catch (e) { console.error("Error países:", e); }
+					},
+					async cargarTiposDocumento() {
+						try { const data = await this.apiFetch('/api/tipos-documento/'); this.tiposDocumento = data.tipos; }
+						catch (e) { console.error("Error tipos doc:", e); }
+					},
+					async cargarRecientes() {
+						try { const data = await this.apiFetch('/api/recientes/'); this.expedientesRecientes = data.recientes; }
+						catch (e) { console.error("Error recientes:", e); }
+					},
+
+					// --- MÉTODOS DE BÚSQUEDA ---
+					async buscar() {
+						if (!this.queryBusqueda.trim()) return;
+						this.cargando = true;
+						this.paginaActual = 1;
+						try {
+							const data = await this.apiFetch(`/api/buscar/?tipo=${this.tipoBusqueda}&q=${encodeURIComponent(this.queryBusqueda)}&mode=quick`);
+							this.resultados = data.resultados;
+						} catch (e) { alert("Error en búsqueda rápida"); }
+						finally { this.cargando = false; }
+					},
+
+					async buscarAvanzado() {
+						this.cargando = true;
+						this.paginaActual = 1;
+						try {
+							let params = new URLSearchParams({
+								tipo: 'persona',
+								mode: 'advanced',
+								n1: this.filtrosPersona.nombre1,
+								n2: this.filtrosPersona.nombre2,
+								a1: this.filtrosPersona.apellido1,
+								a2: this.filtrosPersona.apellido2,
+								doc: this.filtrosPersona.documento,
+								alias: this.filtrosPersona.alias
+							});
+							const data = await this.apiFetch(`/api/buscar/?${params.toString()}`);
+							this.resultados = data.resultados;
+						} catch (e) { alert("Error en búsqueda avanzada"); }
+						finally { this.cargando = false; }
+					},
+
+					// --- GESTIÓN DE EXPEDIENTE ---
+					async verDetalles(id) {
+						this.cargando = true;
+						try {
+							const data = await this.apiFetch(`/api/expediente/${id}/`);
+							this.expediente = data;
+							this.personasVinculadas = data.personas;
+							this.ultimoDestinoId = data.movimientos.length > 0 ? data.movimientos[0].destino_id : data.oficina_id;
+							this.seccionActual = 'detalles';
+						} catch (e) { alert("Error al cargar expediente"); }
+						finally { this.cargando = false; }
+					},
+
+					async guardarEdicionObs() {
+						try {
+							await this.apiFetch(`/api/expediente/${this.expediente.id}/update-obs/`, {
 								method: 'POST',
-								headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+								headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+								body: JSON.stringify({ observaciones: this.obsTemporal })
+							});
+							this.expediente.observaciones = this.obsTemporal;
+							this.editandoObs = false;
+							alert("Observaciones actualizadas.");
+						} catch (e) { alert("Error al guardar observaciones"); }
+					},
+
+					// --- GESTIÓN DE PERSONAS ---
+					async verPerfilPersona(id) {
+						try {
+							const data = await this.apiFetch(`/api/persona/${id}/`);
+							this.personaPerfil = data;
+							this.seccionActual = 'persona_perfil';
+						} catch (e) { alert("Error al cargar perfil"); }
+					},
+
+					async agregarPersona() {
+						try {
+							const response = await fetch(`/DARI/api/expediente/${this.expediente.id}/vincular-persona/`, {
+								method: 'POST',
+								headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+								body: JSON.stringify(this.nuevaPersona)
+							});
+							if (response.ok) {
+								alert("Persona vinculada.");
+								this.verDetalles(this.expediente.id);
+							}
+						} catch (e) { alert("Error al vincular"); }
+					},
+
+					async quitarPersona(personaId) {
+						if (!confirm("¿Quitar persona?")) return;
+						try {
+							await this.apiFetch(`/api/expediente/${this.expediente.id}/desvincular/`, {
+								method: 'POST',
+								headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+								body: JSON.stringify({ persona_id: personaId })
+							});
+							this.verDetalles(this.expediente.id);
+						} catch (e) { alert("Error al desvincular"); }
+					},
+
+					// --- EDICIÓN BIOGRÁFICA ---
+					activarEdicionPersona() {
+						this.personaEdit = {
+							primer_nombre: this.personaPerfil.primer_nombre,
+							segundo_nombre: this.personaPerfil.segundo_nombre,
+							primer_apellido: this.personaPerfil.primer_apellido,
+							segundo_apellido: this.personaPerfil.segundo_apellido,
+							fecha_nacimiento: this.personaPerfil.fecha_nacimiento_iso,
+							nacionalidad_nombre: this.personaPerfil.nacionalidad
+						};
+						this.editandoPersona = true;
+					},
+
+					async guardarEdicionPersona() {
+						try {
+							await this.apiFetch(`/api/persona/${this.personaPerfil.id}/update-bio/`, {
+								method: 'POST',
+								headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+								body: JSON.stringify(this.personaEdit)
+							});
+							alert("Perfil actualizado.");
+							this.editandoPersona = false;
+							this.verPerfilPersona(this.personaPerfil.id);
+						} catch (e) { alert("Error al actualizar biografía"); }
+					},
+
+					// --- MÉTODOS RESTANTES (REQUERIDOS POR TEMPLATE) ---
+					activarEdicionObs() { this.obsTemporal = this.expediente.observaciones; this.editandoObs = true; },
+					cancelarEdicionObs() { this.editandoObs = false; },
+					async cargarRecientes() { try { const data = await this.apiFetch('/api/recientes/'); this.expedientesRecientes = data.recientes; } catch(e){} },
+					abrirRegistroMovimiento() {
+						this.nuevoMovimiento = {
+							codigo_expediente: this.expediente.codigo, origen_id: this.ultimoDestinoId,
+							destino_id: '', fecha: new Date().toISOString().slice(0, 16),
+							entregado_por: '', recibido_por: '', observaciones: ''
+						};
+						this.seccionActual = 'registrar_movimiento';
+					},
+					async guardarMovimiento() {
+						try {
+							await this.apiFetch('/api/movimientos/registrar/', {
+								method: 'POST',
+								headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
 								body: JSON.stringify(this.nuevoMovimiento)
 							});
-							if(res.ok) {
-								alert("Movimiento registrado con éxito");
-								this.verDetalles(this.expediente.id); // Recargamos detalles para ver el nuevo movimiento
-							}
-						},
-
+							alert("Traslado registrado.");
+							this.verDetalles(this.expediente.id);
+						} catch(e){ alert("Error en traslado"); }
+					},
 					async guardarCambioAlfresco() {
-							try {
-								const response = await fetch(`/DARI/api/expediente/${this.expediente.id}/alfresco/`, {
-									method: 'POST',
-									headers: {
-										'Content-Type': 'application/json',
-										'X-CSRFToken': '{{ csrf_token }}'
-									},
-									body: JSON.stringify({ estado: this.expediente.subido_alfresco })
-								});
-								if(response.ok) alert("Estado de Alfresco actualizado en base de datos");
-							} catch (error) {
-								alert("Error al guardar");
-							}
-						},
-
-						async cargarRecientes() {
-							const res = await fetch('/DARI/api/recientes/');
-							const data = await res.json();
-							this.expedientesRecientes = data.recientes;
-						},
-
-						async guardarNuevoExpediente() {
-							try {
-								const response = await fetch('/DARI/api/expediente/crear/', {
-									method: 'POST',
-									headers: {
-										'Content-Type': 'application/json',
-										'X-CSRFToken': '{{ csrf_token }}'
-									},
-									body: JSON.stringify(this.nuevoExpediente)
-								});
-
-								const data = await response.json(); // Leemos la respuesta siempre
-
-								if (response.ok) {
-									alert("Expediente creado con éxito.");
-									this.cargarRecientes(); 
-									this.verDetalles(data.id);
-									this.nuevoExpediente = { codigo: '', oficina_id: '', fecha: new Date().toISOString().split('T')[0], observaciones: '' };
-								} else {
-									// Aquí mostramos el mensaje de "Expediente ya existe" que enviamos desde Django
-									alert("Error: " + (data.message || "No se pudo crear el expediente."));
-								}
-							} catch (error) {
-								alert("Ocurrió un error al conectar con el servidor.");
-							}
-						},
-
-						// Para buscar personas antes de agregarlos a los expedientes:
-						async buscarPersonaExistente() {
-							if (this.queryPersonaExistente.length < 3) {
-								this.resultadosSugeridos = [];
-								return;
-							}
-							const response = await fetch(`/DARI/api/buscar/?q=${encodeURIComponent(this.queryPersonaExistente)}&tipo=persona`);
-							const data = await response.json();
+						try {
+							await this.apiFetch(`/api/expediente/${this.expediente.id}/alfresco/`, {
+								method: 'POST',
+								headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+								body: JSON.stringify({ estado: this.expediente.subido_alfresco })
+							});
+							alert("Estado digital guardado.");
+						} catch(e){}
+					},
+					async buscarPersonaExistente() {
+						if (this.queryPersonaExistente.length < 3) { this.resultadosSugeridos = []; return; }
+						try {
+							const data = await this.apiFetch(`/api/buscar/?q=${encodeURIComponent(this.queryPersonaExistente)}&tipo=persona`);
 							this.resultadosSugeridos = data.resultados;
-						},
-						async ejecutarVinculoExistente(personaId) {
-							try {
-								const response = await fetch(`/DARI/api/expediente/${this.expediente.id}/vincular-existente/`, {
-									method: 'POST',
-									headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
-									body: JSON.stringify({ 
-										persona_id: personaId,
-										rol: 'indagado' // Rol por defecto, se puede cambiar 
-									})
-								});
-								if (response.ok) {
-									alert("Persona vinculada correctamente.");
-									this.queryPersonaExistente = '';
-									this.resultadosSugeridos = [];
-									this.verDetalles(this.expediente.id); // Recargar tabla
-								}
-							} catch (error) { alert("Error al vincular"); }
-						},
-
-						// Método para el botón de agregar persona
-						async agregarPersona() {
-						// Buscamos el país
-						const paisEncontrado = this.paises.find(p => p.nombre === this.nuevaPersona.nacionalidad_nombre);
-						
-						 if(this.nuevaPersona.primer_nombre || this.nuevaPersona.alias) {
-							
-							try {
-								// ENVIAR AL BACKEND
-								const response = await fetch(`/DARI/api/expediente/${this.expediente.id}/vincular-persona/`, {
-									method: 'POST',
-									headers: {
-										'Content-Type': 'application/json',
-										'X-CSRFToken': '{{ csrf_token }}'
-									},
-									body: JSON.stringify(this.nuevaPersona)
-								});
-
-								if (response.ok) {
-									const data = await response.json(); // <--- LEEMOS LA RESPUESTA DEL SERVER
-
-									// Si el servidor guardó con éxito, actualizamos la tabla visual
-									const personaFinal = { 
-										...this.nuevaPersona,
-										persona_id: data.persona_id, // <--- GUARDAMOS EL ID QUE NOS DIO EL SERVER
-										nombre_completo: `${this.nuevaPersona.primer_nombre} ${this.nuevaPersona.segundo_nombre} ${this.nuevaPersona.primer_apellido} ${this.nuevaPersona.segundo_apellido}`.trim(),
-									 	// Sincronizamos el nombre del campo para que Vue lo encuentre
-										persona_aliases: this.nuevaPersona.alias, 
-										nacionalidad_nombre: this.nuevaPersona.nacionalidad_nombre,
-										rol: this.nuevaPersona.rol
-									};
-									this.personasVinculadas.push(personaFinal);
-									
-									// Limpiar formulario
-									this.nuevaPersona = { 
-										primer_nombre: '', segundo_nombre: '', 
-										primer_apellido: '', segundo_apellido: '', 
-										alias: '',
-										tipo_documento_id: '', documento: '', 
-										nacionalidad_nombre: '', 
-										rol: 'indagado' 
-									};
-									
-									alert("Persona vinculada correctamente al expediente.");
-								}
-							} catch (error) { alert("Error de conexión"); }
-							} else {
-								alert("Ingrese al menos un Nombre o un Alias");
-							}
-						},
-
-						// Para quitar personas vinculadas a expedientes:
-						async quitarPersona(personaId) {
-							if (!confirm("¿Está seguro de que desea quitar a esta persona del expediente?")) {
-								return;
-							}
-
-							try {
-								const response = await fetch(`/DARI/api/expediente/${this.expediente.id}/desvincular/`, {
-									method: 'POST',
-									headers: {
-										'Content-Type': 'application/json',
-										'X-CSRFToken': '{{ csrf_token }}'
-									},
-									body: JSON.stringify({ persona_id: personaId })
-								});
-
-								if (response.ok) {
-									// Opción A: Refrescar toda la data desde el server (más seguro)
-									this.verDetalles(this.expediente.id);
-									alert("Persona desvinculada correctamente.");
-								} else {
-									alert("No se pudo desvincular a la persona del servidor.");
-								}
-							} catch (error) {
-								console.error(error);
-								alert("Error de conexión al intentar desvincular.");
-							}
-						},
-
-						async guardarNuevoAliasPerfil() {
-							if (!this.nuevoAliasPerfil.trim()) return;
-							try {
-								const response = await fetch(`/DARI/api/persona/${this.personaPerfil.id}/alias/`, {
-									method: 'POST',
-									headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
-									body: JSON.stringify({ alias: this.nuevoAliasPerfil })
-								});
-								if (response.ok) {
-									this.verPerfilPersona(this.personaPerfil.id); // Recargar perfil
-									this.nuevoAliasPerfil = ''; // Limpiar input
-								}
-							} catch (error) { alert("Error al guardar alias"); }
-						},
-
-						async buscarHistorial() {
-							const res = await fetch(`/DARI/api/movimientos/historial/?codigo=${this.nuevoMovimiento.codigo_expediente}`);
-						const data = await res.json();
-						this.historialBusqueda = data.historial;
+						} catch(e){}
+					},
+					async ejecutarVinculoExistente(personaId) {
+						try {
+							await this.apiFetch(`/api/expediente/${this.expediente.id}/vincular-existente/`, {
+								method: 'POST',
+								headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+								body: JSON.stringify({ persona_id: personaId, rol: 'indagado' })
+							});
+							this.queryPersonaExistente = ''; this.resultadosSugeridos = [];
+							this.verDetalles(this.expediente.id);
+						} catch(e){}
+					},
+					async guardarNuevoAliasPerfil() {
+						if (!this.nuevoAliasPerfil.trim()) return;
+						try {
+							await this.apiFetch(`/api/persona/${this.personaPerfil.id}/alias/`, {
+								method: 'POST',
+								headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+								body: JSON.stringify({ alias: this.nuevoAliasPerfil })
+							});
+							this.nuevoAliasPerfil = '';
+							this.verPerfilPersona(this.personaPerfil.id);
+						} catch(e){}
+					},
+					async guardarNuevoDocPerfil() {
+						try {
+							await this.apiFetch(`/api/persona/${this.personaPerfil.id}/identificacion/`, {
+								method: 'POST',
+								headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+								body: JSON.stringify(this.nuevoDocPerfil)
+							});
+							this.nuevoDocPerfil = { tipo_documento_id: '', numero: '' };
+							this.verPerfilPersona(this.personaPerfil.id);
+						} catch(e){}
+					},
+					async guardarNuevoExpediente() {
+						try {
+							const data = await this.apiFetch('/api/expediente/crear/', {
+								method: 'POST',
+								headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+								body: JSON.stringify(this.nuevoExpediente)
+							});
+							alert("Expediente creado.");
+							this.cargarRecientes();
+							this.verDetalles(data.id);
+						} catch(e){ alert("Error al crear. El código podría estar duplicado."); }
 					}
 				}
 			}).mount('#app')

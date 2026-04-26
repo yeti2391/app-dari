@@ -35,4 +35,6 @@ urlpatterns = [
     path('api/persona/<int:id>/', views.detalle_persona, name='api_detalle_persona'),
     path('api/persona/<int:id>/identificacion/', views.agregar_identificacion_persona, name='api_persona_add_doc'),
     path('api/persona/<int:id>/alias/', views.agregar_alias_persona, name='api_persona_add_alias'),
+    path('api/persona/<int:id>/update-bio/', views.actualizar_biografia_persona, name='api_update_persona_bio'),
+
 ]

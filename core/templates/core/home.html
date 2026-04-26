@@ -309,56 +309,169 @@
     <!-- =============================================
          3. SECCIÓN: PERFIL DE PERSONA (Ficha individual)
          Descripción: Muestra toda la información histórica de un sujeto.
+         Permite la edición de datos biográficos y gestión de identidad informal.
          ============================================== -->
     <section id="persona_perfil" v-show="seccionActual === 'persona_perfil'">
         <div class="container">
             {% verbatim %}
-            <header>
+            
+            <!-- VISTA: CABECERA NORMAL (Lectura) -->
+            <header v-if="!editandoPersona">
                 <a href="#" @click.prevent="seccionActual = 'buscar'"><i class="fas fa-arrow-left"></i> Volver</a>
-                <h2 class="uppercase">{{ personaPerfil.primer_nombre }} {{ personaPerfil.segundo_nombre }} {{ personaPerfil.primer_apellido }} {{ personaPerfil.segundo_apellido }}</h2>
-                <p><strong> F. NACIMIENTO: {{ personaPerfil.fecha_nacimiento }} | NACIONALIDAD:</strong> {{ personaPerfil.nacionalidad }} | <strong>ALIAS:</strong> {{ personaPerfil.aliases.join(', ') }}</p>
+                <div style="display: flex; align-items: center; gap: 15px; margin-top: 10px;">
+                    <h2 class="uppercase" style="margin: 0;">
+                        {{ personaPerfil.primer_nombre }} {{ personaPerfil.segundo_nombre }} 
+                        {{ personaPerfil.primer_apellido }} {{ personaPerfil.segundo_apellido }}
+                    </h2>
+                    <!-- Icono para activar edición -->
+                    <a href="#" @click.prevent="$root.activarEdicionPersona()" title="Editar ficha biográfica" style="border: none; color: #5983b0;">
+                        <i class="fas fa-pencil-alt"></i>
+                    </a>
+                </div>
+                <p style="font-weight: 600; color: #5983b0; margin-top: 10px;">
+                    <i class="fas fa-calendar-alt"></i> F. NACIMIENTO: {{ personaPerfil.fecha_nacimiento || 'No consta' }}
+                    <span style="margin: 0 15px; color: #ccc;">|</span>
+                    <i class="fas fa-globe"></i> NACIONALIDAD: {{ personaPerfil.nacionalidad || 'N/A' }} 
+                    <span style="margin: 0 15px; color: #ccc;">|</span> 
+                    <i class="fas fa-user-tag"></i> ALIAS: {{ personaPerfil.aliases.join(', ') || 'Sin alias' }}
+                </p>
             </header>
 
-            <div class="row">
-                <div class="col-4 col-12-mobile">
-                    <div class="form-container" style="margin-bottom: 2em;">
-                        <h3><i class="fas fa-id-card"></i> Documentos Registrados</h3>
-                        <ul style="list-style: none; padding: 0;">
-                            <li v-for="iden in personaPerfil.identificaciones" :key="iden.id" style="padding: 8px; background: #f8f9fa; margin-bottom: 5px; border-left: 3px solid #5983b0;">
-                                <strong>{{ iden.tipo }}:</strong> {{ iden.numero }}
-                            </li>
-                        </ul>
+            <!-- VISTA: CABECERA EN MODO EDICIÓN (Formulario) -->
+            <header v-else class="form-container" style="text-align: left; padding: 2em; margin-bottom: 2em; border-top: 5px solid #5983b0;">
+                <h3 style="margin-bottom: 25px;"><i class="fas fa-user-edit"></i> Editando Ficha Biográfica</h3>
+                <div class="row gtr-uniform">
+                    <!-- Fila de Nombres -->
+                    <div class="col-3 col-12-mobile">
+                        <label style="font-size: 0.6em;">1er Nombre</label>
+                        <input type="text" v-model="personaEdit.primer_nombre">
                     </div>
-                    <!-- Agregar Alias en el Perfil -->
-                    <div class="form-container">
-                        <h3><i class="fas fa-user-tag"></i> Gestionar Alias</h3>
-                        <input type="text" v-model="$root.nuevoAliasPerfil" placeholder="Nuevo apodo..." @keyup.enter="$root.guardarNuevoAliasPerfil()">
-                        <button class="button small fit" style="margin-top: 10px;" @click="$root.guardarNuevoAliasPerfil()">Añadir Alias</button>
+                    <div class="col-3 col-12-mobile">
+                        <label style="font-size: 0.6em;">2do Nombre</label>
+                        <input type="text" v-model="personaEdit.segundo_nombre">
+                    </div>
+                    <div class="col-3 col-12-mobile">
+                        <label style="font-size: 0.6em;">1er Apellido</label>
+                        <input type="text" v-model="personaEdit.primer_apellido">
+                    </div>
+                    <div class="col-3 col-12-mobile">
+                        <label style="font-size: 0.6em;">2do Apellido</label>
+                        <input type="text" v-model="personaEdit.segundo_apellido">
+                    </div>
+
+                    <!-- Fila de Otros Datos -->
+                    <div class="col-6 col-12-mobile">
+                        <label style="font-size: 0.6em;">Fecha de Nacimiento</label>
+                        <input type="date" v-model="personaEdit.fecha_nacimiento">
+                    </div>
+                    <div class="col-6 col-12-mobile">
+                        <label style="font-size: 0.6em;">Nacionalidad (Escriba para buscar)</label>
+                        <input type="text" 
+                            list="paises-autocompletar-edit" 
+                            v-model="personaEdit.nacionalidad_nombre" 
+                            placeholder="Buscar país...">
+
+                        <datalist id="paises-autocompletar-edit">
+                            <!-- Iteramos sobre la lista global de países -->
+                            <option v-for="p in paises" :key="p.id" :value="p.nombre"></option>
+                        </datalist>
+                    </div>
+
+                    <!-- Botones de Acción -->
+                    <div class="col-12" style="margin-top: 10px;">
+                        <button class="button primary small" @click="$root.guardarEdicionPersona()">
+                            <i class="fas fa-check"></i> Guardar Cambios
+                        </button>
+                        <button class="button alt small" @click="editandoPersona = false">
+                            Cancelar
+                        </button>
                     </div>
                 </div>
-                <div class="col-8 col-12-mobile">
-                    <!-- Historial de expedientes del sujeto -->
-                    <div class="form-container" style="margin-bottom: 2em;">
-                        <h3><i class="fas fa-folder-open"></i> Antecedentes en Expedientes</h3>
-                        <table class="results-table" style="font-size: 0.8em;">
-                            <thead><tr><th>Expediente</th><th>Oficina Actual</th><th>Rol</th><th>Ver</th></tr></thead>
-                            <tbody>
-                                <tr v-for="ex in personaPerfil.expedientes" :key="ex.id">
-                                    <td><strong>{{ ex.codigo }}</strong></td>
-                                    <td>{{ ex.oficina }}</td>
-                                    <td><span class="badge">{{ ex.rol }}</span></td>
-                                    <td><button @click="$root.verDetalles(ex.id)" class="button small icon solid fa-eye"></button></td>
-                                </tr>
-                            </tbody>
-                        </table>
+            </header>
+
+            <!-- CUERPO DEL PERFIL: Documentos y Expedientes -->
+            <div class="row">
+                <div class="col-4 col-12-mobile">
+                    <!-- Caja: Documentos Registrados -->
+                    <div class="form-container" style="margin-bottom: 2em; padding: 1.5em;">
+                        <h3><i class="fas fa-id-card"></i> Documentos Registrados</h3>
+                        <ul style="list-style: none; padding: 0; margin-top: 15px;">
+                            <li v-for="iden in personaPerfil.identificaciones" :key="iden.id" 
+                                style="padding: 10px; background: #f8f9fa; margin-bottom: 8px; border-left: 4px solid #5983b0; font-size: 0.85em;">
+                                <strong>{{ iden.tipo }}:</strong> {{ iden.numero }}
+                            </li>
+                            <li v-if="personaPerfil.identificaciones.length === 0" style="font-style: italic; color: #999;">Sin documentos cargados.</li>
+                        </ul>
                     </div>
-                    <!-- Agregar identificación adicional -->
-                    <div class="form-container">
-                        <h3><i class="fas fa-plus-circle"></i> Agregar Nueva Identificación</h3>
+
+                    <!-- Caja: Gestión de Alias -->
+                    <div class="form-container" style="padding: 1.5em; margin-bottom: 2em;">
+                        <h3><i class="fas fa-user-tag"></i> Gestionar Alias</h3>
+                        <div class="row gtr-uniform">
+                            <div class="col-12">
+                                <input type="text" v-model="$root.nuevoAliasPerfil" placeholder="Nuevo apodo..." @keyup.enter="$root.guardarNuevoAliasPerfil()">
+                            </div>
+                            <div class="col-12">
+                                <button class="button small fit" @click="$root.guardarNuevoAliasPerfil()">Añadir Alias</button>
+                            </div>
+                        </div>
+                        <div style="margin-top: 15px; display: flex; flex-wrap: wrap; gap: 5px;">
+                            <span v-for="a in personaPerfil.aliases" :key="a" class="badge" style="color: #e74c3c; border-radius: 20px; font-size: 0.6em; padding: 2px 10px;">
+                                {{ a }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-8 col-12-mobile">
+                    <!-- Caja: Historial de Expedientes -->
+                    <div class="form-container" style="margin-bottom: 2em; padding: 1.5em;">
+                        <h3><i class="fas fa-folder-open"></i> Participación en Expedientes</h3>
+                        <div class="results-table-container">
+                            <table class="results-table" style="font-size: 0.8em; margin-top: 10px;">
+                                <thead>
+                                    <tr>
+                                        <th>Expediente</th>
+                                        <th>Oficina Actual</th>
+                                        <th>Rol</th>
+                                        <th>Ver</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="ex in personaPerfil.expedientes" :key="ex.id">
+                                        <td><strong>{{ ex.codigo }}</strong></td>
+                                        <td>{{ ex.oficina }}</td>
+                                        <td><span class="badge" style="font-size: 0.9em;">{{ ex.rol }}</span></td>
+                                        <td>
+                                            <button @click="$root.verDetalles(ex.id)" class="button small icon solid fa-eye" style="padding: 0 10px; height: 30px; line-height: 30px;"></button>
+                                        </td>
+                                    </tr>
+                                    <tr v-if="personaPerfil.expedientes.length === 0">
+                                        <td colspan="4" style="text-align: center; font-style: italic;">No registra expedientes vinculados.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Caja: Agregar Identificación Adicional -->
+                    <div class="form-container" style="padding: 1.5em; margin-bottom: 2em;">
+                        <h3><i class="fas fa-plus-circle"></i> Agregar Nuevo Documento</h3>
                         <div class="row gtr-uniform aln-bottom">
-                            <div class="col-4"><label>Tipo</label><select v-model="$root.nuevoDocPerfil.tipo_documento_id"><option v-for="t in $root.tiposDocumento" :key="t.id" :value="t.id">{{ t.nombre }}</option></select></div>
-                            <div class="col-5"><label>Número</label><input type="text" v-model="$root.nuevoDocPerfil.numero"></div>
-                            <div class="col-3"><button class="button primary small fit" @click="$root.guardarNuevoDocPerfil()">Guardar</button></div>
+                            <div class="col-4 col-12-mobile">
+                                <label style="font-size: 0.6em;">Tipo de Documento</label>
+                                <select v-model="$root.nuevoDocPerfil.tipo_documento_id">
+                                    <option value="">Seleccionar...</option>
+                                    <option v-for="t in $root.tiposDocumento" :key="t.id" :value="t.id">{{ t.nombre }}</option>
+                                </select>
+                            </div>
+                            <div class="col-5 col-12-mobile">
+                                <label style="font-size: 0.6em;">Número</label>
+                                <input type="text" v-model="$root.nuevoDocPerfil.numero" placeholder="Ej: 1.234.567-8">
+                            </div>
+                            <div class="col-3 col-12-mobile">
+                                <button class="button primary small fit" @click="$root.guardarNuevoDocPerfil()">Guardar</button>
+                            </div>
                         </div>
                     </div>
                 </div>

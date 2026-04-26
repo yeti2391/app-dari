@@ -273,11 +273,12 @@ def detalle_persona(request, id):
 
     return JsonResponse({
         'id': persona.id,
-        'primer_nombre': persona.primer_nombre,
-        'segundo_nombre': persona.segundo_nombre,
-        'primer_apellido': persona.primer_apellido,
-        'segundo_apellido': persona.segundo_apellido,
-        'fecha_nacimiento': persona.fecha_nacimiento.strftime("%d/%m/%Y") if persona.fecha_nacimiento else "N/A",
+        'primer_nombre': persona.primer_nombre or '',
+        'segundo_nombre': persona.segundo_nombre or '',
+        'primer_apellido': persona.primer_apellido or '',
+        'segundo_apellido': persona.segundo_apellido or '',
+        'fecha_nacimiento': persona.fecha_nacimiento.strftime("%d/%m/%Y") if persona.fecha_nacimiento else None,
+        'fecha_nacimiento_iso': persona.fecha_nacimiento.strftime("%Y-%m-%d") if persona.fecha_nacimiento else '', # PARA EL INPUT DATE
         'nacionalidad': persona.nacionalidad.nombre if persona.nacionalidad else 'N/A',
         'identificaciones': identificaciones,
         'aliases': aliases,
@@ -305,7 +306,44 @@ def agregar_identificacion_persona(request, id):
         )
         return JsonResponse({'status': 'ok'})
 
+# Modificar detalles de personas
+@login_required
+@user_passes_test(es_dari)
+@csrf_exempt
+def actualizar_biografia_persona(request, id):
+    """
+    Actualiza los datos básicos (nombres, apellidos, fecha nac, nacionalidad)
+    de una persona desde su perfil.
+    """
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            persona = get_object_or_404(Persona, id=id)
+            
+            # Actualización de campos de texto
+            persona.primer_nombre = data.get('primer_nombre', '')
+            persona.segundo_nombre = data.get('segundo_nombre', '')
+            persona.primer_apellido = data.get('primer_apellido', '')
+            persona.segundo_apellido = data.get('segundo_apellido', '')
+            
+            # Procesar Fecha de Nacimiento
+            fecha = data.get('fecha_nacimiento')
+            persona.fecha_nacimiento = fecha if fecha else None
+            
+            # Procesar Nacionalidad
+            nombre_pais = data.get('nacionalidad_nombre')
+            if nombre_pais:
+                pais = Pais.objects.filter(nombre=nombre_pais).first()
+                if pais:
+                    persona.nacionalidad = pais
 
+            persona.save() # El método save() del modelo se encarga de las mayúsculas
+            return JsonResponse({'status': 'ok'})
+            
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+    
+    return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status=405)
 
 # --- OTRAS VISTAS ---
 
