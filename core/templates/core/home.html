@@ -338,53 +338,59 @@
             </header>
 
             <!-- VISTA: CABECERA EN MODO EDICIÓN (Formulario) -->
-            <header v-else class="form-container" style="text-align: left; padding: 2em; margin-bottom: 2em; border-top: 5px solid #5983b0;">
-                <h3 style="margin-bottom: 25px;"><i class="fas fa-user-edit"></i> Editando Ficha Biográfica</h3>
+            <header v-else class="form-container" style="text-align: left; padding: 2.5em; margin-bottom: 2em; border-top: 5px solid #5983b0;">
+                <h3 style="margin-bottom: 25px; color: #273C53;">
+                    <i class="fas fa-user-edit"></i> Editando Registros de persona
+                </h3>
+                
                 <div class="row gtr-uniform">
-                    <!-- Fila de Nombres -->
-                    <div class="col-3 col-12-mobile">
-                        <label style="font-size: 0.6em;">1er Nombre</label>
-                        <input type="text" v-model="personaEdit.primer_nombre">
+                    <!-- Fila 1: Nombres (50/50) -->
+                    <div class="col-6 col-12-mobile">
+                        <label style="font-size: 0.7em; font-weight: bold; color: #5983b0;">1er Nombre</label>
+                        <input type="text" v-model="personaEdit.primer_nombre" placeholder="Ej: JUAN">
                     </div>
-                    <div class="col-3 col-12-mobile">
-                        <label style="font-size: 0.6em;">2do Nombre</label>
-                        <input type="text" v-model="personaEdit.segundo_nombre">
-                    </div>
-                    <div class="col-3 col-12-mobile">
-                        <label style="font-size: 0.6em;">1er Apellido</label>
-                        <input type="text" v-model="personaEdit.primer_apellido">
-                    </div>
-                    <div class="col-3 col-12-mobile">
-                        <label style="font-size: 0.6em;">2do Apellido</label>
-                        <input type="text" v-model="personaEdit.segundo_apellido">
+                    <div class="col-6 col-12-mobile">
+                        <label style="font-size: 0.7em; font-weight: bold; color: #5983b0;">2do Nombre</label>
+                        <input type="text" v-model="personaEdit.segundo_nombre" placeholder="Ej: CARLOS">
                     </div>
 
-                    <!-- Fila de Otros Datos -->
+                    <!-- Fila 2: Apellidos (50/50) -->
                     <div class="col-6 col-12-mobile">
-                        <label style="font-size: 0.6em;">Fecha de Nacimiento</label>
+                        <label style="font-size: 0.7em; font-weight: bold; color: #5983b0;">1er Apellido</label>
+                        <input type="text" v-model="personaEdit.primer_apellido" placeholder="Ej: PEREZ">
+                    </div>
+                    <div class="col-6 col-12-mobile">
+                        <label style="font-size: 0.7em; font-weight: bold; color: #5983b0;">2do Apellido</label>
+                        <input type="text" v-model="personaEdit.segundo_apellido" placeholder="Ej: RODRIGUEZ">
+                    </div>
+
+                    <!-- Fila 3: Otros Datos (50/50) -->
+                    <div class="col-6 col-12-mobile">
+                        <label style="font-size: 0.7em; font-weight: bold; color: #5983b0;">Fecha de Nacimiento</label>
                         <input type="date" v-model="personaEdit.fecha_nacimiento">
                     </div>
                     <div class="col-6 col-12-mobile">
-                        <label style="font-size: 0.6em;">Nacionalidad (Escriba para buscar)</label>
+                        <label style="font-size: 0.7em; font-weight: bold; color: #5983b0;">Nacionalidad (Escriba para buscar)</label>
                         <input type="text" 
                             list="paises-autocompletar-edit" 
                             v-model="personaEdit.nacionalidad_nombre" 
                             placeholder="Buscar país...">
-
+                        
                         <datalist id="paises-autocompletar-edit">
-                            <!-- Iteramos sobre la lista global de países -->
                             <option v-for="p in paises" :key="p.id" :value="p.nombre"></option>
                         </datalist>
                     </div>
 
-                    <!-- Botones de Acción -->
-                    <div class="col-12" style="margin-top: 10px;">
-                        <button class="button primary small" @click="$root.guardarEdicionPersona()">
-                            <i class="fas fa-check"></i> Guardar Cambios
-                        </button>
-                        <button class="button alt small" @click="editandoPersona = false">
-                            Cancelar
-                        </button>
+                    <!-- Fila 4: Botones de Acción (Ancho completo) -->
+                    <div class="col-12" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px;">
+                        <div style="display: flex; gap: 15px;">
+                            <button class="button primary small" @click="$root.guardarEdicionPersona()">
+                                <i class="fas fa-check"></i> Guardar Cambios
+                            </button>
+                            <button class="button alt small" @click="editandoPersona = false">
+                                Cancelar
+                            </button>
+                        </div>
                     </div>
                 </div>
             </header>
@@ -467,7 +473,7 @@
                             </div>
                             <div class="col-5 col-12-mobile">
                                 <label style="font-size: 0.6em;">Número</label>
-                                <input type="text" v-model="$root.nuevoDocPerfil.numero" placeholder="Ej: 1.234.567-8">
+                                <input type="text" v-model="$root.nuevoDocPerfil.numero" placeholder="Ej: 12345678">
                             </div>
                             <div class="col-3 col-12-mobile">
                                 <button class="button primary small fit" @click="$root.guardarNuevoDocPerfil()">Guardar</button>
@@ -582,8 +588,8 @@
             <header><h2>Soporte Técnico</h2></header>
             <form method="post" action="#">
                 <div class="row gtr-uniform">
-                    <div class="col-6 col-12-mobile"><label>Usuario</label><input type="text" value="DARI Staff" readonly /></div>
-                    <div class="col-6 col-12-mobile"><label>Canal de Soporte</label><input type="email" value="soporte@dari.gub.uy" readonly /></div>
+                    <div class="col-6 col-12-mobile"><label>Usuario</label><input type="text" value="usuario" readonly /></div>
+                    <div class="col-6 col-12-mobile"><label>Correo</label><input type="email" value="depto@minterior.gub.uy" readonly /></div>
                     <div class="col-12"><textarea name="message" placeholder="Describa su incidencia o sugerencia aquí..."></textarea></div>
                     <div class="col-12"><input type="submit" value="Enviar Reporte" class="button primary"></div>
                 </div>

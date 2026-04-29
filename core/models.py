@@ -43,7 +43,9 @@ class Persona(models.Model):
     segundo_apellido = models.CharField(max_length=100, blank=True, null=True)
     fecha_nacimiento = models.DateField(null=True, blank=True)
     nacionalidad = models.ForeignKey(Pais, on_delete=models.PROTECT, blank=True, null=True)
+     # AUDITORÍA
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    fecha_registro = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de registro")
     # CAMPO AUXILIAR PARA PODER VINCULAR PERSONAS EN BD VIEJAS CON EXP
     id_origen = models.CharField(max_length=50, null=True, db_index=True)
 
