@@ -427,6 +427,21 @@ def vincular_persona(request, id):
             data = json.loads(request.body)
             expediente = get_object_or_404(Expediente, id=id)
             
+            # --- FUNCIÓN DE LIMPIEZA DE DATOS ---
+            # Convierte cadenas vacías en None (NULL en la base de datos)
+            def clean_val(val):
+                if val is None: return None
+                text = str(val).strip()
+                return text if text != "" else None
+
+            # Limpiamos los datos biográficos recibidos
+            p_nom1 = clean_val(data.get('primer_nombre'))
+            p_nom2 = clean_val(data.get('segundo_nombre'))
+            p_ape1 = clean_val(data.get('primer_apellido'))
+            p_ape2 = clean_val(data.get('segundo_apellido'))
+            f_nac  = clean_val(data.get('fecha_nacimiento'))
+            nacionalidad_nombre = clean_val(data.get('nacionalidad_nombre'))
+            
             documento_num = data.get('documento', '').strip().upper()
             tipo_doc_id = data.get('tipo_documento_id')
             
@@ -444,17 +459,18 @@ def vincular_persona(request, id):
             # 2. Si la persona no existe, la creamos
             if not persona:
                 pais = None
-                if data.get('nacionalidad_nombre'):
-                    pais = Pais.objects.filter(nombre=data['nacionalidad_nombre']).first()
+                if nacionalidad_nombre:
+                    pais = Pais.objects.filter(nombre=nacionalidad_nombre).first()
                 
+                # CREACIÓN: Usamos los valores limpios (pueden ser None/NULL)
                 persona = Persona.objects.create(
-                    primer_nombre=data.get('primer_nombre'),
-                    segundo_nombre=data.get('segundo_nombre', ''),
-                    primer_apellido=data.get('primer_apellido'),
-                    segundo_apellido=data.get('segundo_apellido', ''),
-                    fecha_nacimiento=data.get('fecha_nacimiento') or None,
+                    primer_nombre=p_nom1,
+                    segundo_nombre=p_nom2,
+                    primer_apellido=p_ape1,
+                    segundo_apellido=p_ape2,
+                    fecha_nacimiento=f_nac,
                     nacionalidad=pais,
-                    created_by=request.user 
+                    created_by=request.user # Auditoría automática
                 )
                 
                 # Creamos su primera identificación si hay datos
@@ -465,12 +481,15 @@ def vincular_persona(request, id):
                         numero=documento_num
                     )
             else:
-                # Si la persona ya existía, opcionalmente actualizamos sus nombres
-                persona.primer_nombre = data.get('primer_nombre', persona.primer_nombre)
-                persona.primer_apellido = data.get('primer_apellido', persona.primer_apellido)
+                # Si la persona ya existía, actualizamos sus nombres si vienen datos nuevos
+                if p_nom1: persona.primer_nombre = p_nom1
+                if p_ape1: persona.primer_apellido = p_ape1
+                # Actualizamos también los segundos nombres/apellidos si vienen
+                persona.segundo_nombre = p_nom2
+                persona.segundo_apellido = p_ape2
                 persona.save()
 
-            # 3. Crear el vínculo con el Expediente
+            # 3. Crear el vínculo con el Expediente (ExpedientePersona)
             ExpedientePersona.objects.get_or_create(
                 expediente=expediente,
                 persona=persona,
@@ -478,21 +497,24 @@ def vincular_persona(request, id):
             )
 
             # 4. Gestión de Alias (pueden ser varios separados por coma)
-            if data.get('alias'):
-                lista_alias = data['alias'].split(',')
+            raw_alias = data.get('alias')
+            if raw_alias:
+                lista_alias = raw_alias.split(',')
                 for a in lista_alias:
                     nombre_alias = a.strip().upper()
                     if nombre_alias:
                         Alias.objects.get_or_create(persona=persona, alias=nombre_alias)
 
+            # Devolvemos el ID para que el frontend pueda crear el link al perfil inmediatamente
             return JsonResponse({
                 'status': 'ok',
                 'persona_id': persona.id
-                })
+            })
             
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
-
+        
+        
 @login_required
 @user_passes_test(es_dari)
 @csrf_exempt

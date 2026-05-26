@@ -261,11 +261,38 @@
 								headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
 								body: JSON.stringify(this.nuevaPersona)
 							});
+
 							if (response.ok) {
-								alert("Persona vinculada.");
+								alert("Persona vinculada correctamente al expediente.");
+
+								// RECARGAMOS la lista de personas para ver los cambios reales del server
 								this.verDetalles(this.expediente.id);
+
+								// LIMPIEZA DEL FORMULARIO (Sección Vincular Nueva Persona)
+								this.nuevaPersona = {
+									primer_nombre: '', 
+									segundo_nombre: '',
+									primer_apellido: '', 
+									segundo_apellido: '',
+									alias: '', 
+									tipo_documento_id: '', 
+									documento: '',
+									fecha_nacimiento: '', 
+									nacionalidad_nombre: '', 
+									rol: 'indagado'
+								};
+
+								// LIMPIEZA DE BÚSQUEDA (Sección Vincular Persona Registrada)
+								this.queryPersonaExistente = '';
+								this.resultadosSugeridos = [];
+
+							} else {
+								alert("Error al intentar vincular la persona.");
 							}
-						} catch (e) { alert("Error al vincular"); }
+						} catch (error) {
+							console.error(error);
+							alert("Error de conexión con el servidor.");
+						}
 					},
 
 					async quitarPersona(personaId) {
