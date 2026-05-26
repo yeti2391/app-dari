@@ -498,10 +498,24 @@
                     <div class="row gtr-uniform">
                         <div class="col-6 col-12-mobile"><label>Código Interno</label><input placeholder="Ejemplo: BK001" type="text" v-model="nuevoExpediente.codigo" required></div>
                         <div class="col-6 col-12-mobile">
-                            <label>Oficina Solicitante</label>
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <label>Oficina Solicitante</label>
+                                <!-- Switch pequeño para ver inactivas -->
+                                <div style="font-size: 0.6em; display: flex; align-items: center; gap: 5px;">
+                                    <label class="switch" style="width: 30px; height: 15px;">
+                                        <input type="checkbox" v-model="mostrarInactivasCrear">
+                                        <span class="slider" style="border-radius: 15px;"></span>
+                                    </label>
+                                    <span>Ver Inactivas</span>
+                                </div>
+                            </div>
                             <select v-model="nuevoExpediente.oficina_id" required>
-                                <option value="">Seleccione...</option>
-                                <option v-for="o in oficinas" :key="o.id" :value="o.id">{% verbatim %}{{ o.nombre }}{% endverbatim %}</option>
+                                <option value="">Seleccione una oficina...</option>
+                                <option v-for="o in oficinasFiltradasCrear" :key="o.id" :value="o.id">
+                                    {% verbatim %}
+                                        {{ o.nombre }} {{ !o.activa ? '(INACTIVA)' : '' }}
+                                    {% endverbatim %}
+                                </option>
                             </select>
                         </div>
                         <div class="col-12"><label>Observaciones Iniciales</label><textarea v-model="nuevoExpediente.observaciones" rows="4"></textarea></div>
@@ -533,23 +547,91 @@
 
     <!-- =============================================
          5. SECCIÓN: REGISTRAR TRASLADO (MOVIMIENTO)
+         Descripción: Formulario para registrar el paso físico de un expediente.
+         Permite seleccionar origen, destino y responsables.
          ============================================== -->
     <section id="registrar_movimiento" v-show="seccionActual === 'registrar_movimiento'">
         <div class="container">
             <header>
-                <a href="#" @click.prevent="seccionActual = 'detalles'"><i class="fas fa-arrow-left"></i> Cancelar</a>
-                {% verbatim %}<h2>Movimiento de Exp: {{ nuevoMovimiento.codigo_expediente }}</h2>{% endverbatim %}
+                <a href="#" @click.prevent="seccionActual = 'detalles'"><i class="fas fa-arrow-left"></i> Cancelar y volver al expediente</a>
+                {% verbatim %}<h2>Registrar Traslado de: {{ nuevoMovimiento.codigo_expediente }}</h2>{% endverbatim %}
             </header>
-            <div class="form-container">
+
+            <div class="form-container" style="max-width: 800px;"> <!-- Reducimos un poco el ancho máximo para que no se vea tan estirado en monitores grandes -->
                 <form @submit.prevent="guardarMovimiento">
                     <div class="row gtr-uniform">
-                        <div class="col-6 col-12-mobile"><label>Fecha/Hora Real del Traspaso</label><input type="datetime-local" v-model="nuevoMovimiento.fecha" required></div>
-                        <div class="col-6 col-12-mobile"><label>Oficina Origen</label><select v-model="nuevoMovimiento.origen_id"><option v-for="o in oficinas" :key="o.id" :value="o.id">{% verbatim %}{{ o.nombre }}{% endverbatim %}</option></select></div>
-                        <div class="col-6 col-12-mobile"><label>Oficina Destino</label><select v-model="nuevoMovimiento.destino_id"><option v-for="o in oficinas" :key="o.id" :value="o.id">{% verbatim %}{{ o.nombre }}{% endverbatim %}</option></select></div>
-                        <div class="col-6 col-12-mobile"><label>Entregado por</label><input type="text" v-model="nuevoMovimiento.entregado_por" required></div>
-                        <div class="col-6 col-12-mobile"><label>Recibido por</label><input type="text" v-model="nuevoMovimiento.recibido_por" required></div>
-                        <div class="col-12"><label>Notas del Traslado (Folios, estado, tomos)</label><textarea v-model="nuevoMovimiento.observaciones"></textarea></div>
-                        <div class="col-12"><button type="submit" class="button primary fit">Registrar Traslado Permanente</button></div>
+                        
+                        <!-- 1. FECHA Y HORA -->
+                        <div class="col-12">
+                            <label><i class="fas fa-calendar-alt"></i> Fecha y Hora Real del Traspaso (Manual)</label>
+                            <input type="datetime-local" v-model="nuevoMovimiento.fecha" required>
+                        </div>
+
+                        <!-- 2. OFICINA ORIGEN -->
+                        <div class="col-12">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 5px;">
+                                <label style="margin: 0;"><i class="fas fa-sign-out-alt"></i> Oficina de Origen (Sale de:)</label>
+                                <!-- Switch para habilitar oficinas inactivas en el origen -->
+                                <div style="font-size: 0.6em; display: flex; align-items: center; gap: 8px; background: #f0f4f8; padding: 5px 10px; border-radius: 20px;">
+                                    <label class="switch" style="width: 30px; height: 16px; margin: 0;">
+                                        <input type="checkbox" v-model="mostrarInactivasOrigen">
+                                        <span class="slider"></span>
+                                    </label>
+                                    <span style="font-weight: bold; color: #555;">VER INACTIVAS</span>
+                                </div>
+                            </div>
+                            <select v-model="nuevoMovimiento.origen_id" required>
+                                <option value="">Seleccione oficina de origen...</option>
+                                <option v-for="o in oficinasFiltradasOrigen" :key="o.id" :value="o.id">
+                                    {% verbatim %}{{ o.nombre }}{% endverbatim %} {% verbatim %}{{ !o.activa ? '(INACTIVA)' : '' }}{% endverbatim %}
+                                </option>
+                            </select>
+                        </div>
+
+                        <!-- 3. OFICINA DESTINO -->
+                        <div class="col-12">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 5px;">
+                                <label style="margin: 0;"><i class="fas fa-sign-in-alt"></i> Oficina de Destino (Entra a:)</label>
+                                <!-- Switch para habilitar oficinas inactivas en el destino -->
+                                <div style="font-size: 0.6em; display: flex; align-items: center; gap: 8px; background: #f0f4f8; padding: 5px 10px; border-radius: 20px;">
+                                    <label class="switch" style="width: 30px; height: 16px; margin: 0;">
+                                        <input type="checkbox" v-model="mostrarInactivasDestino">
+                                        <span class="slider"></span>
+                                    </label>
+                                    <span style="font-weight: bold; color: #555;">VER INACTIVAS</span>
+                                </div>
+                            </div>
+                            <select v-model="nuevoMovimiento.destino_id" required>
+                                <option value="">Seleccione oficina de destino...</option>
+                                <option v-for="o in oficinasFiltradasDestino" :key="o.id" :value="o.id">
+                                    {% verbatim %}{{ o.nombre }}{% endverbatim %} {% verbatim %}{{ !o.activa ? '(INACTIVA)' : '' }}{% endverbatim %}
+                                </option>
+                            </select>
+                        </div>
+
+                        <!-- 4. ENTREGADO POR -->
+                        <div class="col-12">
+                            <label><i class="fas fa-user-share"></i> Entregado por (Nombre Completo)</label>
+                            <input type="text" v-model="nuevoMovimiento.entregado_por" required placeholder="Persona que entrega el expediente físico">
+                        </div>
+
+                        <!-- 5. RECIBIDO POR -->
+                        <div class="col-12">
+                            <label><i class="fas fa-user-check"></i> Recibido por (Nombre Completo)</label>
+                            <input type="text" v-model="nuevoMovimiento.recibido_por" required placeholder="Persona que recibe el expediente físico">
+                        </div>
+
+                        <!-- 6. OBSERVACIONES -->
+                        <div class="col-12">
+                            <label><i class="fas fa-comment-dots"></i> Notas del Traslado (Folios, tomos, estado físico)</label>
+                            <textarea v-model="nuevoMovimiento.observaciones" rows="3" placeholder="Ej: Se entregan 3 tomos con un total de 450 folios."></textarea>
+                        </div>
+
+                        <!-- 7. BOTÓN DE ENVÍO -->
+                        <div class="col-12" style="margin-top: 15px;">
+                            <button type="submit" class="button primary fit icon solid fa-save">Finalizar y Registrar Traspaso</button>
+                        </div>
+
                     </div>
                 </form>
             </div>

@@ -112,7 +112,11 @@
 							fecha: '', entregado_por: '', recibido_por: '', observaciones: ''
 						},
 						ultimoDestinoId: null,
-						
+
+						// --- LISTADO DE OFICINAS INACTIVAS ---
+						mostrarInactivasOrigen: false,
+						mostrarInactivasDestino: false,
+						mostrarInactivasCrear: false,
 						// --- DATOS MAESTROS (Cargados desde API) ---
 						oficinas: [],
 						paises: [],
@@ -132,7 +136,20 @@
 					// Muestra solo los 3 movimientos más nuevos en la ficha de detalles
 					movimientosResumidos() {
 						return this.expediente.movimientos ? this.expediente.movimientos.slice(0, 3) : [];
-					}
+					},
+					// OFICINAS INACTIVAS
+					oficinasFiltradasCrear() {
+						if (this.mostrarInactivasCrear) return this.oficinas;
+						return this.oficinas.filter(o => o.activa);
+					},
+					oficinasFiltradasOrigen() {
+						if (this.mostrarInactivasOrigen) return this.oficinas;
+						return this.oficinas.filter(o => o.activa);
+					},
+					oficinasFiltradasDestino() {
+						if (this.mostrarInactivasDestino) return this.oficinas;
+						return this.oficinas.filter(o => o.activa);
+					},
 				},
 
 				mounted() {

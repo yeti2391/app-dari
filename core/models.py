@@ -30,6 +30,7 @@ class TipoDocumento(models.Model):
 class Oficina(models.Model):
     codigo = models.CharField(max_length=10, unique=True)
     nombre = models.CharField(max_length=100)
+    activa = models.BooleanField(default=True)
 
     def __str__(self):
         return self.nombre

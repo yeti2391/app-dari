@@ -407,7 +407,7 @@ def expedientes_recientes(request):
     return JsonResponse({'recientes': data})
 
 def lista_oficinas(request):
-    oficinas = Oficina.objects.all().values('id', 'nombre')
+    oficinas = Oficina.objects.all().order_by('nombre').values('id', 'nombre', 'activa')
     return JsonResponse({'oficinas': list(oficinas)})
 
 def lista_paises(request):

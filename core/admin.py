@@ -74,6 +74,11 @@ class ExpedienteAdmin(admin.ModelAdmin):
     # Muestra la lista de personas involucradas al final de la ficha del expediente
     inlines = [ExpedientePersonaInline]
 
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "oficina":
+            kwargs["queryset"] = Oficina.objects.filter(activa=True)
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
 admin.site.register(Expediente, ExpedienteAdmin)
 
 
@@ -83,7 +88,20 @@ class ExpedienteMovimientoAdmin(admin.ModelAdmin):
     list_filter = ('fecha', 'origen', 'destino')
     search_fields = ('expediente__codigo', 'entregado_por', 'recibido_por')
 
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name in ["origen", "destino"]:
+            kwargs["queryset"] = Oficina.objects.filter(activa=True)
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
 admin.site.register(ExpedienteMovimiento, ExpedienteMovimientoAdmin)
+
+class OficinaAdmin(admin.ModelAdmin):
+    list_display = ('codigo', 'nombre', 'activa')
+    list_filter = ('activa',)
+    search_fields = ('codigo', 'nombre')
+    ordering = ('codigo',)
+
+admin.site.register(Oficina, OficinaAdmin)
 
 # =============================================================================
 # REGISTROS SIMPLES (TABLAS MAESTRAS)
@@ -92,7 +110,7 @@ admin.site.register(ExpedienteMovimiento, ExpedienteMovimientoAdmin)
 
 admin.site.register(Pais)
 admin.site.register(TipoDocumento)
-admin.site.register(Oficina)
+
 
 # Nota: Alias e Identificacion se gestionan preferentemente 
 # a través de los Inlines en PersonaAdmin, pero se pueden registrar si es necesario.
