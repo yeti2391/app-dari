@@ -268,8 +268,10 @@
                                 <label>Rol en Causa</label>
                                 <select v-model="nuevaPersona.rol">
                                     <option value="indagado">Indagado</option>
-                                    <option value="victima">Víctima</option>
+                                    <option value="denunciante">Denunciante</option>
                                     <option value="testigo">Testigo</option>
+                                    <option value="victima">Víctima</option>
+                                    
                                 </select>
                             </div>
                             <div class="col-12"><button class="button primary fit" @click.prevent="$root.agregarPersona()">Vincular al Expediente</button></div>
