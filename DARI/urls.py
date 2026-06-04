@@ -38,5 +38,7 @@ urlpatterns = [
     # path('DRBPA/', include('drbpa.urls')), # Futura app    
     # Si alguien entra a la raíz, mandarlo al login
     path('', lambda req: redirect('login')),
+    # agregamos la ruta para el dashboard
+    path('DARI/dashboard/', include('dashboard.urls')),
 
 ]

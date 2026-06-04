@@ -19,7 +19,7 @@
 		<!-- envolvemos todo en app para darle control a vue -->
          <div id="app" v-cloak>
 			{% if user.is_authenticated %}
-				{% include './snippets/navbar.html' %}
+				{% include 'shared/navbar.html' %}
 			{% endif %}
 			
 			<div id="main" {% if not user.is_authenticated %}style="margin-left: 0;"{% endif %}>
@@ -27,7 +27,7 @@
 			</div>
 
 			{% if user.is_authenticated %}
-				{% include './snippets/footer.html' %}
+				{% include 'shared/footer.html' %}
 			{% endif %}
 		</div>
 		
