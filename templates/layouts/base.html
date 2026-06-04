@@ -152,6 +152,9 @@
 						if (this.mostrarInactivasDestino) return this.oficinas;
 						return this.oficinas.filter(o => o.activa);
 					},
+					esDashboard() {
+						return window.location.pathname.includes('/dashboard/');
+					},
 				},
 
 				mounted() {

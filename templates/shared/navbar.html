@@ -51,21 +51,30 @@
         <!-- Nav Modificado para Vue -->
         <nav id="nav">
             <ul>
-                <!-- Usamos :class para que el estilo 'active' cambie dinámicamente -->
-                <li :class="{ 'active': seccionActual === 'buscar' }">
-                    <a href="#" @click.prevent="seccionActual = 'buscar'" id="top-link">
+                <!-- BÚSQUEDA -->
+                <li :class="{ 'active': seccionActual === 'buscar' && !esDashboard }">
+                    <a href="{% url 'core:home' %}">
                         <span class="icon solid fa-search">Buscar</span>
                     </a>
                 </li>
-                       
-                <li :class="{ 'active': seccionActual === 'crear' }">
-                    <a href="#" @click.prevent="seccionActual = 'crear'" id="about-link">
+
+                <!-- CREAR EXPEDIENTE -->
+                <li :class="{ 'active': seccionActual === 'crear' && !esDashboard }">
+                    <a href="#" @click.prevent="seccionActual = 'crear'">
                         <span class="icon solid fa-folder-plus">Crear expediente</span>
                     </a>
                 </li>
                 
+                <!-- NUEVO: DASHBOARD ESTADÍSTICO -->
+                <li :class="{ 'active': esDashboard }">
+                    <a href="{% url 'dashboard:home' %}">
+                        <span class="icon solid fa-chart-line">Dashboard</span>
+                    </a>
+                </li>
+                
+                <!-- CONTACTO -->
                 <li :class="{ 'active': seccionActual === 'contacto' }">
-                    <a href="#" @click.prevent="seccionActual = 'contacto'" id="contact-link">
+                    <a href="#" @click.prevent="seccionActual = 'contacto'">
                         <span class="icon solid fa-envelope">Contacto</span>
                     </a>
                 </li>
