@@ -1,0 +1,52 @@
+{% extends "layouts/base.html" %}
+
+{% block body %}
+<div class="container">
+    <header>
+        <h2>Informe Estadístico</h2>
+        <p>Período: {{ fch_inicio }} al {{ fch_fin }}</p>
+    </header>
+
+    <div class="row">
+        <!-- Resumen Rápido -->
+        <div class="col-4">
+            <div class="form-container" style="text-align: center;">
+                <h1>{{ total_novedades }}</h1>
+                <p>Total Novedades</p>
+            </div>
+        </div>
+        <div class="col-4">
+            <div class="form-container" style="text-align: center;">
+                <h1>{{ allanamientos.positivos }}</h1>
+                <p>Allanamientos Positivos</p>
+            </div>
+        </div>
+
+        <!-- Gráfico de Dependencias -->
+        <div class="col-12" style="margin-top: 2em;">
+            <div class="form-container">
+                <h3>Distribución de Novedades por Dependencia</h3>
+                <canvas id="chartDeps"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts de Gráficos -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Gráfico de Dependencias
+    const ctxDeps = document.getElementById('chartDeps').getContext('2d');
+    new Chart(ctxDeps, {
+        type: 'bar',
+        data: {
+            labels: [{% for item in deps_novedades %}"{{ item.dependencia_alias }}",{% endfor %}],
+            datasets: [{
+                label: 'Cantidad de Novedades',
+                data: [{% for item in deps_novedades %}{{ item.cantidad }},{% endfor %}],
+                backgroundColor: '#5983b0'
+            }]
+        }
+    });
+</script>
+{% endblock %}

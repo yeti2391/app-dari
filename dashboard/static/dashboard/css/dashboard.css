@@ -1,0 +1,74 @@
+/* DASHBOARD CSS */
+
+
+
+/* 1. Forzamos que la fila sea un contenedor Flex y estire sus hijos (columnas) */
+.row.aln-stretch {
+    display: flex !important;
+    align-items: stretch !important;
+}
+
+/* 2. Forzamos que la columna sea Flex para que su hijo (.form-container) pueda estirarse */
+.row.aln-stretch > div[class*="col-"] {
+    display: flex !important;
+    flex-direction: column;
+}
+
+/* 3. La pieza clave: flex-grow: 1 hace que el box blanco ocupe todo el alto de la columna */
+.row.aln-stretch .form-container {
+    flex-grow: 1; 
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between; /* El botón siempre irá al final */
+    padding: 2.5em;
+    margin-bottom: 0; /* El margen lo maneja la grilla */
+}
+
+/* 4. Ajuste para que el texto no quede pegado al botón */
+.card-content {
+    margin-bottom: 2em;
+}
+
+/* 5. Espaciado final para no chocar con el footer */
+#main > section {
+    padding-bottom: 10em !important;
+}
+
+
+/* Estandarizar botones dentro de las tarjetas del dashboard */
+.row.aln-stretch .form-container .button,
+.row.aln-stretch .form-container button {
+    width: 100% !important;        /* Todos ocupan el ancho total de la tarjeta */
+    height: 3.5em !important;      /* Altura fija para los tres */
+    line-height: 3.5em !important; /* Centra el texto verticalmente */
+    padding: 0 !important;         /* Eliminamos paddings que puedan variar el tamaño */
+    font-size: 0.6em !important;   /* Tamaño de letra uniforme */
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 1px !important;
+    display: block !important;
+    text-align: center !important;
+}
+
+/* Ajuste opcional para los iconos dentro de los botones */
+.row.aln-stretch .form-container .button i,
+.row.aln-stretch .form-container button i {
+    margin-right: 8px;
+}
+
+
+/* Añadir espacio al final de la sección para que no pegue al footer */
+#main > section {
+    padding-bottom: 4em !important; /* Espacio generoso abajo */
+}
+
+/* También podemos asegurar que el container tenga su propio margen inferior */
+.container {
+    padding-bottom: 4em;
+}
+
+/* Opcional: Si quieres que el footer tenga una separación física clara 
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    margin-top: 0;
+}
+    */

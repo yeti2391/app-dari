@@ -1,0 +1,47 @@
+{% extends "layouts/base.html" %}
+
+{% block body %}
+<div class="container">
+    <header>
+        <h2>Importación de Datos SGSP</h2>
+        <a href="{% url 'dashboard:home' %}" class="button small">Volver</a>
+    </header>
+
+    <div class="row">
+        <!-- Card para Eventos -->
+        <div class="col-6 col-12-mobile">
+            <div class="form-container">
+                <h3>1. Cargar Eventos (Novedades)</h3>
+                <p style="font-size: 0.7em; color: #888;">Suba el archivo "ExportadosEventos...csv"</p>
+                
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="file" name="csv_eventos" accept=".csv" required style="margin-bottom: 1em;">
+                    <button type="submit" class="button primary fit">
+                        <i class="fas fa-upload"></i> Procesar Eventos
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Placeholder para la siguiente tabla que me mencionarás -->
+        <div class="col-6 col-12-mobile">
+            <div class="form-container" style="background-color: #f8f8f8; border: 2px dashed #ccc;">
+                <h3 style="color: #ccc;">2. Cargar Ampliaciones e Informes</h3>
+                <p style="font-size: 0.7em; color: #ccc;">(Lógica pendiente de configurar)</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Feedback de Django Messages -->
+    {% if messages %}
+    <div style="margin-top: 2em;">
+        {% for message in messages %}
+        <div class="form-container" style="background-color: {% if message.tags == 'success' %}#d4edda{% else %}#f8d7da{% endif %}; padding: 1em;">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

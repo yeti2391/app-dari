@@ -4,10 +4,12 @@
 	<head>
 		<title>{% block title %}{% endblock %}</title>
 		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<link rel="stylesheet" href="{% static 'core/css/main.css'%}" />
 		<!-- Importar VUE -->
 		<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+		<!-- Este bloque permite que cada app inyecte su propio CSS aquí -->
+   		 {% block extra_css %}{% endblock %}
 		<style>
         /* Estilo básico para ocultar secciones */
 			section { border: none !important; }
