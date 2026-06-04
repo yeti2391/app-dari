@@ -1,5 +1,6 @@
 import csv
 import io
+import re
 from datetime import datetime
 from .models import EventoSGSP
 
@@ -51,3 +52,46 @@ def procesar_csv_eventos(archivo):
         else: conteo_actualizados += 1
 
     return conteo_nuevos, conteo_actualizados
+
+# Aca funciones para la carga de ampliaciones e informes
+
+def procesar_csv_ampliaciones_masivo(lista_archivos):
+    conteo_total = 0
+    
+    for archivo in lista_archivos:
+        # 1. Extraer periodo del nombre del archivo (busca algo como 2025-03)
+        conteo_total = 0
+        # Patrón estricto: 4 dígitos, guion, mes del 01 al 12
+        patron_estricto = r'^(\d{4}-(0[1-9]|1[0-2]))\.csv$'
+        
+        for archivo in lista_archivos:
+            nombre = archivo.name
+            match = re.match(patron_estricto, nombre)
+            
+            if not match:
+                # Si un solo archivo falla, lanzamos error y no procesamos nada
+                raise ValueError(f"Formato de nombre inválido en: {nombre}. Debe ser YYYY-MM.csv")
+            
+            periodo_detectado = match.group(1) # Extrae el 'YYYY-MM'
+
+        # 2. Leer CSV
+        decoded_file = archivo.read().decode('utf-8')
+        io_string = io.StringIO(decoded_file)
+        reader = csv.DictReader(io_string, delimiter=';')
+
+        for row in reader:
+            AmpliacionInfo.objects.using('default').update_or_create(
+                nro=row['Nro'],
+                defaults={
+                    'denuncia': row['Denuncia'],
+                    'ingreso_denuncia': limpiar_fecha(row['Ingreso Denuncia']),
+                    'titulo': row['Título'],
+                    'dependencia_ampliacion': row['Dependencia Ampliacion'],
+                    'tipo': row['Tipo'],
+                    'periodo': periodo_detectado, # <--- AQUÍ ASIGNAMOS EL MES AUTOMÁTICO
+                    # ... resto de campos ...
+                }
+            )
+            conteo_total += 1
+            
+    return conteo_total

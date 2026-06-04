@@ -53,28 +53,35 @@
             <ul>
                 <!-- BÚSQUEDA -->
                 <li :class="{ 'active': seccionActual === 'buscar' && !esDashboard }">
-                    <a href="{% url 'core:home' %}">
+                    <a href="{% url 'core:home' %}?s=buscar"> <!-- Agregamos ?s=buscar -->
                         <span class="icon solid fa-search">Buscar</span>
                     </a>
                 </li>
 
                 <!-- CREAR EXPEDIENTE -->
                 <li :class="{ 'active': seccionActual === 'crear' && !esDashboard }">
-                    <a href="#" @click.prevent="seccionActual = 'crear'">
+                    <!-- Si estamos en el home, usamos Vue. Si no, link normal de Django -->
+                    <a v-if="!esDashboard" href="#" @click.prevent="seccionActual = 'crear'">
+                        <span class="icon solid fa-folder-plus">Crear expediente</span>
+                    </a>
+                    <a v-else href="{% url 'core:home' %}?s=crear">
                         <span class="icon solid fa-folder-plus">Crear expediente</span>
                     </a>
                 </li>
-                
-                <!-- NUEVO: DASHBOARD ESTADÍSTICO -->
+
+                <!-- DASHBOARD -->
                 <li :class="{ 'active': esDashboard }">
                     <a href="{% url 'dashboard:home' %}">
                         <span class="icon solid fa-chart-line">Dashboard</span>
                     </a>
                 </li>
-                
+
                 <!-- CONTACTO -->
                 <li :class="{ 'active': seccionActual === 'contacto' }">
-                    <a href="#" @click.prevent="seccionActual = 'contacto'">
+                    <a v-if="!esDashboard" href="#" @click.prevent="seccionActual = 'contacto'">
+                        <span class="icon solid fa-envelope">Contacto</span>
+                    </a>
+                    <a v-else href="{% url 'core:home' %}?s=contacto">
                         <span class="icon solid fa-envelope">Contacto</span>
                     </a>
                 </li>

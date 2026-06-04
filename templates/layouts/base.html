@@ -158,11 +158,20 @@
 				},
 
 				mounted() {
-					// Carga inicial de datos al abrir la app
+					// 1. Cargamos datos maestros
 					this.cargarOficinas();
 					this.cargarPaises();
 					this.cargarTiposDocumento();
 					this.cargarRecientes();
+
+					// 2. LÓGICA DE NAVEGACIÓN ENTRE APPS:
+					// Revisamos si en la URL hay un parámetro 's' (sección)
+					const urlParams = new URLSearchParams(window.location.search);
+					const seccionDesdeUrl = urlParams.get('s');
+
+					if (seccionDesdeUrl) {
+						this.seccionActual = seccionDesdeUrl;
+					}
 				},
 
 				methods: {

@@ -68,7 +68,8 @@ class AmpliacionInfo(models.Model):
     seguimiento_area_seguridad = models.CharField(max_length=10, null=True, blank=True)
     seguimiento_area_investigaciones = models.CharField(max_length=10, null=True, blank=True)
     total_allanamientos_positivos = models.IntegerField(null=True, blank=True)
-    total_allanamientos_negativos = models.IntegerField(null=True, blank=True)
+    total_allanamientos_negativos = models.IntegerField(null=True, blank=True)    
+    periodo = models.CharField(max_length=7, null=True, blank=True) # Guardará '2025-03'
 
     class Meta:
         managed = False
