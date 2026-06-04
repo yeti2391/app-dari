@@ -1,97 +1,83 @@
-import csv
-import io
-import re
+import csv, io, re
 from datetime import datetime
-from .models import EventoSGSP
+from .models import NovedadEstadistica, AmpliacionEstadistica
+
+# Diccionario de mapeo para convertir nombres largos en Alias cortos
+MAPEO_DEPENDENCIAS = {
+    'DGLCCO INTERPOL - AYUDANTÍA Y SECRETARÍA DIRECTOR': 'AYUDANTÍA',
+    'DGLCCO INTERPOL – DPTO. INV. DELITOS ESPECIALES': 'DIDE',
+    'DGLCCO INTERPOL – DPTO ANÁLISIS Y REG INFORMACIÓN': 'DARI',
+    'DGLCCO INTERPOL - OF. GUARDIA Y CENTRAL TELEFÓNICA': 'GUARDIA',
+    'DGLCCO INTERPOL – DPTO. POBLACIÓN FLOTANTE': 'DPF',
+    'DGLCCO INTERPOL – DPTO. INV. DELITOS FINANCIEROS': 'DIDF',
+    'DGLCCO INTERPOL – DPTO INV ANÁLISIS TRÁF AUTOMOTOR': 'DATA',
+    'DGLCCO INTERPOL - SECCIÓN LAVADO DE ACTIVOS': 'SLA',
+    'DGLCCO INTERPOL – DPTO. COMUNICACIONES I24/7': 'I24/7',
+    'DGLCCO INTERPOL – DPTO. CAPTURAS INTERNACIONALES': 'DCI',
+    'DGLCCO INTERPOL – DPTO. ASUNTOS INTERNACIONALES': 'DAI',
+    'DGLCCO INTERPOL – DPTO REG Y BÚS PERSONAS AUSENTES': 'DRBPA',
+}
+
+def obtener_alias(nombre_largo):
+    for largo, corto in MAPEO_DEPENDENCIAS.items():
+        if largo in nombre_largo: return corto
+    return nombre_largo[:15] # Fallback por si no coincide
 
 def limpiar_fecha(txt):
-    if not txt or txt.strip() == "": return None
+    if not txt or str(txt).lower() == 'null': return None
     try:
-        # El SGSP exporta como DD/MM/YYYY HH:MM
         return datetime.strptime(txt.strip(), '%d/%m/%Y %H:%M')
-    except ValueError:
-        return None
-
-def limpiar_float(txt):
-    if not txt: return 0.0
-    # Cambiamos la coma por punto para que Postgres lo acepte como float
-    return float(str(txt).replace(',', '.'))
+    except:
+        try: return datetime.strptime(txt.strip(), '%Y-%m-%d %H:%M:%S')
+        except: return None
 
 def procesar_csv_eventos(archivo):
-    # Leer el archivo decodificando a UTF-8
-    decoded_file = archivo.read().decode('utf-8')
-    io_string = io.StringIO(decoded_file)
-    # El delimitador es ; según indicaste
-    reader = csv.DictReader(io_string, delimiter=';')
-    
-    conteo_nuevos = 0
-    conteo_actualizados = 0
+    content = archivo.read().decode('utf-8')
+    reader = csv.DictReader(io.StringIO(content), delimiter=';')
+    nuevos, actualizados = 0, 0
 
     for row in reader:
-        # Usamos update_or_create basado en la PK 'nro'
-        obj, created = EventoSGSP.objects.using('default').update_or_create(
-            nro=row['Nro'],
+        r = {k.lower(): v for k, v in row.items()}
+        obj, created = NovedadEstadistica.objects.update_or_create(
+            nro=r['nro'],
             defaults={
-                'noticiaunicacriminal': int(row['NoticiaUnicaCriminal']) if row['NoticiaUnicaCriminal'] else None,
-                'hecho': limpiar_fecha(row['Hecho']),
-                'conocimiento': limpiar_fecha(row['Conocimiento']),
-                'ingreso': limpiar_fecha(row['Ingreso']),
-                'u_ejecutora_origen': row['U Ejecutora Origen'],
-                'dependencia_origen': row['Dependencia Origen'],
-                'dependencia_actual': row['Dependencia Actual'],
-                'titulo': row['Título'],
-                'aclarada': row['Aclarada'],
-                'x': limpiar_float(row['X']),
-                'y': limpiar_float(row['Y']),
-                'total_allanamientos_positivos': int(row['Total Allanamientos Positivos']) if row['Total Allanamientos Positivos'] else 0,
-                'total_allanamientos_negativos': int(row['Total Allanamientos Negativos']) if row['Total Allanamientos Negativos'] else 0,
-                # Agrega aquí el resto de campos que necesites...
+                'nunc': r.get('noticiaunicacriminal'),
+                'fecha_ingreso': limpiar_fecha(r.get('ingreso')),
+                'dependencia_original': r.get('dependencia actual', ''),
+                'dependencia_alias': obtener_alias(r.get('dependencia actual', '')),
+                'titulo': r.get('título', ''),
+                'aclarada': r.get('aclarada', '').lower() == 'si',
+                'allanamientos_pos': int(r.get('total allanamientos positivos', 0)),
+                'allanamientos_neg': int(r.get('total allanamientos negativos', 0)),
             }
         )
-        if created: conteo_nuevos += 1
-        else: conteo_actualizados += 1
-
-    return conteo_nuevos, conteo_actualizados
-
-# Aca funciones para la carga de ampliaciones e informes
+        if created: nuevos += 1
+        else: actualizados += 1
+    return nuevos, actualizados
 
 def procesar_csv_ampliaciones_masivo(lista_archivos):
-    conteo_total = 0
-    
+    total = 0
     for archivo in lista_archivos:
-        # 1. Extraer periodo del nombre del archivo (busca algo como 2025-03)
-        conteo_total = 0
-        # Patrón estricto: 4 dígitos, guion, mes del 01 al 12
-        patron_estricto = r'^(\d{4}-(0[1-9]|1[0-2]))\.csv$'
+        # Validar nombre YYYY-MM.csv
+        match = re.search(r'(\d{4}-\d{2})', archivo.name)
+        if not match: continue
+        periodo = match.group(1)
         
-        for archivo in lista_archivos:
-            nombre = archivo.name
-            match = re.match(patron_estricto, nombre)
-            
-            if not match:
-                # Si un solo archivo falla, lanzamos error y no procesamos nada
-                raise ValueError(f"Formato de nombre inválido en: {nombre}. Debe ser YYYY-MM.csv")
-            
-            periodo_detectado = match.group(1) # Extrae el 'YYYY-MM'
-
-        # 2. Leer CSV
-        decoded_file = archivo.read().decode('utf-8')
-        io_string = io.StringIO(decoded_file)
-        reader = csv.DictReader(io_string, delimiter=';')
-
+        reader = csv.DictReader(io.StringIO(archivo.read().decode('utf-8')), delimiter=';')
         for row in reader:
-            AmpliacionInfo.objects.using('default').update_or_create(
-                nro=row['Nro'],
+            r = {k.lower(): v for k, v in row.items()}
+            AmpliacionEstadistica.objects.update_or_create(
+                nro=r['nro'],
                 defaults={
-                    'denuncia': row['Denuncia'],
-                    'ingreso_denuncia': limpiar_fecha(row['Ingreso Denuncia']),
-                    'titulo': row['Título'],
-                    'dependencia_ampliacion': row['Dependencia Ampliacion'],
-                    'tipo': row['Tipo'],
-                    'periodo': periodo_detectado, # <--- AQUÍ ASIGNAMOS EL MES AUTOMÁTICO
-                    # ... resto de campos ...
+                    'denuncia_madre': r.get('denuncia'),
+                    'fecha_denuncia': limpiar_fecha(r.get('ingreso denuncia')),
+                    'titulo': r.get('título', ''),
+                    'dependencia_alias': obtener_alias(r.get('dependencia ampliacion', '')),
+                    'tipo': r.get('tipo', 'AMP'),
+                    'periodo': periodo,
+                    'allanamientos_pos': int(r.get('total allanamientos positivos', 0)),
+                    'allanamientos_neg': int(r.get('total allanamientos negativos', 0)),
                 }
             )
-            conteo_total += 1
-            
-    return conteo_total
+            total += 1
+    return total

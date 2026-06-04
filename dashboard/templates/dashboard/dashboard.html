@@ -38,21 +38,43 @@
                     <p style="font-size: 0.8em; color: #666;">Seleccione el rango de fechas para el análisis (Mensual o Anual).</p>
                     
                     <!-- Formulario de selección de fechas -->
+                    {% if disponibilidad.min %}
+                    <div class="form-container" style="background-color: #eef4fa; border-left: 5px solid #5983b0; margin-bottom: 2em; padding: 1em;">
+                        <p style="font-size: 0.7em; margin: 0; color: #273c53;">
+                            <i class="fas fa-info-circle"></i> 
+                            <strong>Datos disponibles:</strong> 
+                            Desde {{ disponibilidad.min }} hasta {{ disponibilidad.max }}
+                        </p>
+                    </div>
+
                     <form action="{% url 'dashboard:informe_anual' %}" method="get">
                         <div class="row gtr-50">
                             <div class="col-6 col-12-mobile">
                                 <label style="font-size: 0.6em; text-align: left;">Fecha Inicio</label>
-                                <input type="date" name="inicio" required value="2025-03-01">
+                                <!-- Aplicamos el MIN y MAX detectado -->
+                                <input type="date" name="inicio" required 
+                                    min="{{ disponibilidad.min }}" max="{{ disponibilidad.max }}"
+                                    value="{{ disponibilidad.min }}">
                             </div>
                             <div class="col-6 col-12-mobile">
                                 <label style="font-size: 0.6em; text-align: left;">Fecha Fin</label>
-                                <input type="date" name="fin" required value="2026-02-28">
+                                <input type="date" name="fin" required 
+                                    min="{{ disponibilidad.min }}" max="{{ disponibilidad.max }}"
+                                    value="{{ disponibilidad.max }}">
                             </div>
                         </div>
                         <button type="submit" class="button fit primary" style="margin-top: 1.5em;">
-                            <i class="fas fa-chart-pie"></i> Ver y Validar Informe
+                            <i class="fas fa-chart-pie"></i> Generar Informe
                         </button>
                     </form>
+
+                    {% else %}
+                    <!-- Si no hay datos cargados todavía -->
+                    <div class="form-container" style="text-align: center; padding: 2em;">
+                        <i class="fas fa-exclamation-circle fa-2x" style="color: #e74c3c;"></i>
+                        <p>No hay datos estadísticos cargados. Por favor, realice una importación primero.</p>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
