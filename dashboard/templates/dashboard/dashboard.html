@@ -1,0 +1,44 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Dashboard Estadístico - DGLCCO{% endblock %}
+
+{% block body %}
+<div class="container">
+    <header>
+        <h2>Control de Estadísticas DGLCCO E INTERPOL</h2>
+        <p>Generación automatizada de informes mensuales y anuales.</p>
+    </header>
+
+    <div class="row">
+        <!-- Card 1: Importar -->
+        <div class="col-4 col-12-mobile">
+            <div class="form-container" style="text-align: center; padding: 2em;">
+                <i class="fas fa-file-upload fa-3x" style="color: #5983b0;"></i>
+                <h3 style="margin-top: 1em;">Cargar Datos SGSP</h3>
+                <p style="font-size: 0.8em;">Suba los archivos .csv exportados del sistema de seguridad.</p>
+                <a href="{% url 'dashboard:importar' %}" class="button fit primary">Ir a Importación</a>
+            </div>
+        </div>
+
+        <!-- Card 2: Informe Actual -->
+        <div class="col-4 col-12-mobile">
+            <div class="form-container" style="text-align: center; padding: 2em;">
+                <i class="fas fa-chart-bar fa-3x" style="color: #5983b0;"></i>
+                <h3 style="margin-top: 1em;">Informe del Período</h3>
+                <p style="font-size: 0.8em;">Visualice los números del mes actual o cierre anual.</p>
+                <a href="{% url 'dashboard:informe_anual' %}" class="button fit">Ver Informe Web</a>
+            </div>
+        </div>
+
+        <!-- Card 3: Imprimir PDF -->
+        <div class="col-4 col-12-mobile">
+            <div class="form-container" style="text-align: center; padding: 2em;">
+                <i class="fas fa-file-pdf fa-3x" style="color: #e74c3c;"></i>
+                <h3 style="margin-top: 1em;">Exportar Oficial</h3>
+                <p style="font-size: 0.8em;">Genera el archivo PDF con formato institucional.</p>
+                <button class="button fit alt">Descargar PDF</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
