@@ -8,77 +8,80 @@
 {% block title %}Dashboard Estadístico - DGLCCO{% endblock %}
 
 {% block body %}
-<div class="container">
-    <header>
-        <h2>Estadísticas DGLCCO E INTERPOL</h2>
-        <p>Generación automatizada de informes mensuales y anuales.</p>
-    </header>
+<!-- 
+    IMPORTANTE: Agregamos la clase dashboard-view para que el CSS 
+    pueda centrar y alinear las tarjetas correctamente.
+-->
+<section id="dashboard-main" class="dashboard-view">
+    <div class="container">
+        <header>
+            <h2>Estadísticas DGLCCO E INTERPOL</h2>
+            <p>Generación automatizada de informes mensuales y anuales.</p>
+        </header>
 
-    <!-- En dashboard/dashboard.html -->
-    <div class="row aln-stretch aln-center">
-        
-        <!-- 1. Cargar Datos -->
-        <div class="col-5 col-12-mobile">
-            <div class="form-container">
-                <div class="card-content">
-                    <i class="fas fa-file-upload fa-3x" style="color: #5983b0;"></i>
-                    <h3 style="margin-top: 1em;">Actualizar Base de Datos</h3>
-                    <p style="font-size: 0.8em; color: #666;">Suba los archivos mensuales del SGSP para mantener las estadísticas al día.</p>
-                </div>
-                <a href="{% url 'dashboard:importar' %}" class="button fit primary">Ir a Importación</a>
-            </div>
-        </div>
-
-        <!-- 2. Configurar y Generar Informe -->
-        <div class="col-7 col-12-mobile">
-            <div class="form-container">
-                <div class="card-content">
-                    <i class="fas fa-calendar-check fa-3x" style="color: #5983b0;"></i>
-                    <h3 style="margin-top: 1em;">Generar Informe Estadístico</h3>
-                    <p style="font-size: 0.8em; color: #666;">Seleccione el rango de fechas para el análisis (Mensual o Anual).</p>
-                    
-                    <!-- Formulario de selección de fechas -->
-                    {% if disponibilidad.min %}
-                    <div class="form-container" style="background-color: #eef4fa; border-left: 5px solid #5983b0; margin-bottom: 2em; padding: 1em;">
-                        <p style="font-size: 0.7em; margin: 0; color: #273c53;">
-                            <i class="fas fa-info-circle"></i> 
-                            <strong>Datos disponibles:</strong> 
-                            Desde {{ disponibilidad.min }} hasta {{ disponibilidad.max }}
-                        </p>
+        <div class="row aln-stretch aln-center">
+            
+            <!-- 1. Cargar Datos -->
+            <div class="col-5 col-12-mobile">
+                <div class="form-container">
+                    <div class="card-content">
+                        <i class="fas fa-file-upload fa-3x" style="color: #5983b0; margin-bottom: 0.5em;"></i>
+                        <h3 style="margin-top: 1em;">Actualizar Base de Datos</h3>
+                        <p style="font-size: 0.8em; color: #666;">Suba los archivos mensuales del SGSP para mantener las estadísticas al día.</p>
                     </div>
+                    <a href="{% url 'dashboard:importar' %}" class="button fit primary">Ir a Importación</a>
+                </div>
+            </div>
 
-                    <form action="{% url 'dashboard:informe_anual' %}" method="get">
-                        <div class="row gtr-50">
-                            <div class="col-6 col-12-mobile">
-                                <label style="font-size: 0.6em; text-align: left;">Fecha Inicio</label>
-                                <!-- Aplicamos el MIN y MAX detectado -->
-                                <input type="date" name="inicio" required 
-                                    min="{{ disponibilidad.min }}" max="{{ disponibilidad.max }}"
-                                    value="{{ disponibilidad.min }}">
-                            </div>
-                            <div class="col-6 col-12-mobile">
-                                <label style="font-size: 0.6em; text-align: left;">Fecha Fin</label>
-                                <input type="date" name="fin" required 
-                                    min="{{ disponibilidad.min }}" max="{{ disponibilidad.max }}"
-                                    value="{{ disponibilidad.max }}">
-                            </div>
+            <!-- 2. Configurar y Generar Informe -->
+            <div class="col-7 col-12-mobile">
+                <div class="form-container">
+                    <div class="card-content">
+                        <i class="fas fa-calendar-check fa-3x" style="color: #5983b0; margin-bottom: 0.5em;"></i>
+                        <h3 style="margin-top: 1em;">Generar Informe Estadístico</h3>
+                        
+                        {% if disponibilidad.min %}
+                        <!-- Info de disponibilidad -->
+                        <div style="background-color: #f0f4f8; border-left: 4px solid #5983b0; margin: 1em 0; padding: 10px; border-radius: 4px;">
+                            <p style="font-size: 0.7em; margin: 0; color: #273c53; text-align: left;">
+                                <i class="fas fa-info-circle"></i> 
+                                <strong>Datos cargados:</strong> {{ disponibilidad.min }} al {{ disponibilidad.max }}
+                            </p>
                         </div>
-                        <button type="submit" class="button fit primary" style="margin-top: 1.5em;">
-                            <i class="fas fa-chart-pie"></i> Generar Informe
-                        </button>
-                    </form>
 
-                    {% else %}
-                    <!-- Si no hay datos cargados todavía -->
-                    <div class="form-container" style="text-align: center; padding: 2em;">
-                        <i class="fas fa-exclamation-circle fa-2x" style="color: #e74c3c;"></i>
-                        <p>No hay datos estadísticos cargados. Por favor, realice una importación primero.</p>
+                        <form action="{% url 'dashboard:informe_anual' %}" method="get">
+                            <div class="row gtr-50">
+                                <div class="col-6 col-12-mobile">
+                                    <label style="font-size: 0.6em; text-align: left; font-weight: bold;">FECHA INICIO</label>
+                                    <input type="date" name="inicio" required 
+                                        min="{{ disponibilidad.min }}" max="{{ disponibilidad.max }}"
+                                        value="{{ disponibilidad.min }}">
+                                </div>
+                                <div class="col-6 col-12-mobile">
+                                    <label style="font-size: 0.6em; text-align: left; font-weight: bold;">FECHA FIN</label>
+                                    <input type="date" name="fin" required 
+                                        min="{{ disponibilidad.min }}" max="{{ disponibilidad.max }}"
+                                        value="{{ disponibilidad.max }}">
+                                </div>
+                            </div>
+                            <button type="submit" class="button fit primary" style="margin-top: 1.5em;">
+                                <i class="fas fa-chart-pie"></i> Ver Informe
+                            </button>
+                        </form>
+
+                        {% else %}
+                        <!-- Estado vacío -->
+                        <div style="text-align: center; padding: 1em; color: #e74c3c;">
+                            <i class="fas fa-exclamation-triangle fa-2x"></i>
+                            <p style="margin-top: 10px; font-weight: bold;">No hay datos estadísticos cargados.</p>
+                            <a href="{% url 'dashboard:importar' %}" class="button small alt">Cargar primer archivo</a>
+                        </div>
+                        {% endif %}
                     </div>
-                    {% endif %}
                 </div>
             </div>
-        </div>
 
-    </div>
-</div>
+        </div> <!-- Cierre de la row -->
+    </div> <!-- Cierre del container -->
+</section>
 {% endblock %}

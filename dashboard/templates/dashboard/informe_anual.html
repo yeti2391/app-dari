@@ -3,122 +3,208 @@
 
 {% block extra_css %}
     <link rel="stylesheet" href="{% static 'dashboard/css/dashboard.css' %}">
-    <!-- Este CSS solo se activa al imprimir -->
-    <style>
-        @media print {
-            #header, #footer, .no-print { display: none !important; }
-            #main { margin-left: 0 !important; padding: 0 !important; }
-            .container { width: 100% !important; max-width: none !important; }
-            .page-break { page-break-before: always; }
-            
-            /* Simulación de tu carátula */
-            .caratula {
-                height: 100vh;
-                border-left: 50px solid #5983b0; /* Tu franja azul */
-                padding: 40px;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-            }
-        }
-        
-        /* Estilo del botón flotante */
-        .btn-print-float {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            z-index: 1000;
-            border-radius: 50%;
-            width: 60px;
-            height: 60px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        }
-    </style>
 {% endblock %}
 
-{% block title %}Informe Estadístico - DGLCCO E INTERPOL{% endblock %}   
-
 {% block body %}
-<!-- Botón para imprimir (No se ve en el PDF) -->
-<button class="button primary btn-print-float no-print" onclick="window.print()" title="Imprimir Informe">
-    <i class="fas fa-print"></i>
-</button>
+<section class="report-view">
+    <div id="report-container">
 
-<div class="container">
-    <header>
-        <h2>Informe Estadístico</h2>
-        <p>Período: {{ fch_inicio }} al {{ fch_fin }}</p>
-    </header>
+        <button class="btn-print-float no-print" onclick="window.print()">
+            <i class="fas fa-print" style="color: white !important;"></i>
+        </button>
 
-    <!-- PAGINA 1: CARÁTULA (Solo visible al imprimir o si quieres verla en web) -->
-    <div class="caratula">
-        <div style="text-align: right;">
-            <img src="{% static 'core/img/LogoDGLCCO.webp' %}" style="width: 150px;">
+        <div id="report-container">
+
+            <!-- PÁGINA 1: CARÁTULA -->
+            <div class="page-a4 caratula-a4">
+                <div class="caratula-content">
+                    <div style="text-align: right;">
+                        <img src="{% static 'dashboard/img/minterior.webp' %}" style="width: 100px;">
+                    </div>
+                    <div style="text-align: center;">
+                        <img src="{% static 'core/img/LogoDGLCCO.webp' %}" style="width: 350px;">
+                    </div>
+                    <div class="caratula-box">
+                        <h1 style="color: white !important; margin: 0; font-size: 1.5em; font-weight: bold;">INFORME ESTADÍSTICO</h1>
+                        <p style="margin: 5px 0 0 0; font-size: 1em; font-weight: bold;">DEPARTAMENTO DE ANÁLISIS Y REGISTRO DE LA INFORMACIÓN</p>
+                        <p style="margin:0; font-size: 1em;">Período: {{ fch_inicio }} al {{ fch_fin }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PÁGINA 2: CONTENIDO INICIAL -->
+            <div class="page-a4">
+                <!-- Cabezal ocupa el 100% de ancho -->
+                <div class="header-institucional">
+                    <div class="header-row-1">
+                        <img src="{% static 'dashboard/img/MI_DIPN encabezado.png' %}" alt="DIPN">
+                    </div>
+                    <div class="header-row-2">
+                        <div class="header-col-side"><img src="{% static 'dashboard/img/LogoDIPN.png' %}" alt="Logo DIPN"></div>
+                        <div class="header-col-center">
+                            <p>DIRECCIÓN GENERAL DE LUCHA CONTRA EL</p>
+                            <p>CRIMEN ORGANIZADO E INTERPOL</p>
+                            <p>ÁREA INFORMACIÓN</p>
+                            <p>DEPARTAMENTO DE ANÁLISIS Y REGISTRO DE LA INFORMACIÓN</p>
+                            <p>Maldonado 1109 – Montevideo – Uruguay</p>
+                            <p style="font-size: 7pt; font-weight: normal;">interpol-informacion@minterior.gub.uy</p>
+                        </div>
+                        <div class="header-col-side"><img src="{% static 'core/img/LogoDGLCCO.webp' %}" alt="Logo DGLCCO"></div>
+                    </div>
+                </div>
+
+                <!-- El texto si lleva los márgenes -->
+                <div class="page-body">
+                    <header><h2>Introducción</h2></header>
+                    <div class="text-justify">
+                        <p>El presente informe tiene por finalidad exponer indicadores cuantitativos vinculados a la actividad desarrollada por la Dirección General de Lucha Contra el Crimen Organizado e INTERPOL durante el período analizado.</p>
+                        <p>A tales efectos se consideran las novedades registradas en el Sistema de Gestión de Seguridad Pública, así como las ampliaciones e informes confeccionados por las distintas dependencias de esta Dirección.</p>
+                    </div>
+
+                    <header><h2>1. Novedades registradas</h2></header>
+                    <div class="text-justify">
+                        <p>Las novedades constituyen el principal registro de actuaciones dentro del Sistema de Gestión de Seguridad Pública y representan los hechos o situaciones que involucran a la Dirección.</p>
+                        <p>Total de novedades contabilizadas: <span class="stat-highlight">{{ total_novedades }}</span></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PÁGINA 3: GRÁFICOS DE DISTRIBUCIÓN -->
+            <div class="page-a4">
+                <div class="page-body mt-normal">
+                    <h3>1.1 Distribución de novedades por dependencia</h3>
+                    <p class="text-justify">
+                        El siguiente análisis detalla la carga de trabajo distribuida entre las unidades ejecutoras de esta Dirección General durante el período seleccionado.
+                    </p>
+
+                    <!-- Contenedor para los dos gráficos -->
+                    <div class="row" style="margin-top: 1cm;">
+                        <!-- Gráfico de Barras (Izquierda/Arriba) -->
+                        <div class="col-12">
+                            <div class="chart-container" style="height: 300px;">
+                                <canvas id="chartDepsNovedadesBar"></canvas>
+                            </div>
+                        </div>
+                        
+                        <!-- Gráfico de Torta (Derecha/Abajo) -->
+                        <div class="col-12" style="margin-top: 2cm; display: flex; flex-direction: column; align-items: center;">
+                            <h4 style="font-size: 10pt; text-align: center; margin-bottom: 10px;">PARTICIPACIÓN PORCENTUAL</h4>
+                            <div class="chart-container" style="height: 300px; width: 300px;">
+                                <canvas id="chartDepsNovedadesPie"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabla de datos (al final de la hoja) -->
+                    <div class="results-table-container" style="margin-top: 1cm;">
+                        <table class="results-table" style="font-size: 9pt;">
+                            <thead>
+                                <tr>
+                                    <th>Dependencia</th>
+                                    <th>Cantidad</th>
+                                    <th>% del Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in deps_novedades %}
+                                <tr>
+                                    <td>{{ item.dependencia_alias }}</td>
+                                    <td>{{ item.cantidad }}</td>
+                                    <td><strong>{{ item.porcentaje }}%</strong></td> <!-- Ya viene calculado -->
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PÁGINA 5: ALLANAMIENTOS -->
+            <div class="page-a4">
+                <div class="page-body mt-normal">
+                    <header><h2>10. Allanamientos realizados</h2></header>
+                    <div class="text-justify">
+                        <p>Resumen de medidas investigativas y operativas desarrolladas en el marco de procedimientos policiales.</p>
+                    </div>
+
+                    <div class="row" style="margin-top: 2em; text-align: center;">
+                        <div class="col-4"><h3>{{ allanamientos.positivos }}</h3><p>Positivos</p></div>
+                        <div class="col-4"><h3>{{ allanamientos.negativos }}</h3><p>Negativos</p></div>
+                        <div class="col-4"><h3>{{ allanamientos.total }}</h3><p>Total</p></div>
+                    </div>
+                </div>
+            </div>
+
         </div>
-        <div style="background: black; color: white; padding: 40px; margin-top: 50%;">
-            <h2>INFORME ESTADÍSTICO DE GESTIÓN</h2>
-            <p>Período: {{ fch_inicio }} al {{ fch_fin }}</p>
-            <p>DGLCCO E INTERPOL</p>
-        </div>
-    </div>
 
-    <div class="page-break"></div>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script>
+            // Configuración Global
+            Chart.defaults.font.family = "Arial";
+            Chart.defaults.color = "#333";
 
-    <!-- PAGINA 2: DATOS -->
-    <div class="row">
-        <div class="col-12">
-            <header>
-                <h2>1. Novedades Registradas</h2>
-                <p>Total del período: <strong>{{ total_novedades }}</strong></p>
-            </header>
+            // Datos extraídos de Django
+            const labelsDeps = [{% for item in deps_novedades %}"{{ item.dependencia_alias }}",{% endfor %}];
+            const dataDeps = [{% for item in deps_novedades %}{{ item.cantidad }},{% endfor %}];
             
-            <div class="form-container">
-                <h3>1.1 Distribución por Dependencia</h3>
-                <canvas id="chartDeps"></canvas>
-            </div>
-        </div>
+            // Paleta de colores profesionales para la Dirección
+            const coloresDGLCCO = [
+                '#273C53', '#5983b0', '#90ACCB', '#D6E2EA', 
+                '#2c3e50', '#34495e', '#5dade2', '#aed6f1',
+                '#1b4f72', '#21618c', '#2874a6', '#2e86c1'
+            ];
+
+            // 1. GRÁFICO DE BARRAS (Tendencia)
+            const ctxBar = document.getElementById('chartDepsNovedadesBar').getContext('2d');
+            new Chart(ctxBar, {
+                type: 'bar',
+                data: {
+                    labels: labelsDeps,
+                    datasets: [{
+                        label: 'Cantidad de Novedades',
+                        data: dataDeps,
+                        backgroundColor: '#5983b0',
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    indexAxis: 'y', // Barras horizontales
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: { beginAtZero: true, grid: { display: false } }
+                    }
+                }
+            });
+
+            // 2. GRÁFICO DE TORTA (Participación)
+            const ctxPie = document.getElementById('chartDepsNovedadesPie').getContext('2d');
+            new Chart(ctxPie, {
+                type: 'pie',
+                data: {
+                    labels: labelsDeps,
+                    datasets: [{
+                        data: dataDeps,
+                        backgroundColor: coloresDGLCCO,
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right', // Leyenda a la derecha para no ocupar alto
+                            labels: { boxWidth: 12, font: { size: 9 } }
+                        }
+                    }
+                }
+            });
+        </script>
     </div>
-
-    <div class="row">
-        <!-- Resumen Rápido -->
-        <div class="col-4">
-            <div class="form-container" style="text-align: center;">
-                <h1>{{ total_novedades }}</h1>
-                <p>Total Novedades</p>
-            </div>
-        </div>
-        <div class="col-4">
-            <div class="form-container" style="text-align: center;">
-                <h1>{{ allanamientos.positivos }}</h1>
-                <p>Allanamientos Positivos</p>
-            </div>
-        </div>
-
-        <!-- Gráfico de Dependencias -->
-        <div class="col-12" style="margin-top: 2em;">
-            <div class="form-container">
-                <h3>Distribución de Novedades por Dependencia</h3>
-                <canvas id="chartDeps"></canvas>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Scripts de Gráficos -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-    // Gráfico de Dependencias
-    const ctxDeps = document.getElementById('chartDeps').getContext('2d');
-    new Chart(ctxDeps, {
-        type: 'bar',
-        data: {
-            labels: [{% for item in deps_novedades %}"{{ item.dependencia_alias }}",{% endfor %}],
-            datasets: [{
-                label: 'Cantidad de Novedades',
-                data: [{% for item in deps_novedades %}{{ item.cantidad }},{% endfor %}],
-                backgroundColor: '#5983b0'
-            }]
-        }
-    });
-</script>
+</section>
 {% endblock %}

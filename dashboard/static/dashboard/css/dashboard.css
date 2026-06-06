@@ -1,74 +1,208 @@
-/* DASHBOARD CSS */
+/* =============================================================================
+   1. CONFIGURACIÓN GLOBAL Y VARIABLES
+   Afecta a toda la aplicación Dashboard.
+   ============================================================================= */
+@font-face {
+    font-family: 'Arial';
+    src: local('Arial');
+}
+
+:root {
+    --color-dglcco: #5983b0;      /* Azul Institucional */
+    --margin-top-normal: 2.0cm;
+    --margin-bottom: 2.0cm;
+    --margin-left: 3.5cm;         /* Margen para encuadernación */
+    --margin-right: 1.5cm;
+}
+
+/* Forzar que el navegador respete colores de fondo en impresiones y PDF */
+* {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+}
 
 
+/* =============================================================================
+   2. ESTILOS DEL PANEL PRINCIPAL (dashboard.html)
+   Afecta a las tarjetas (cards) de "Cargar Datos" y "Generar Informe".
+   ============================================================================= */
 
-/* 1. Forzamos que la fila sea un contenedor Flex y estire sus hijos (columnas) */
-.row.aln-stretch {
+/* Contenedor de las tarjetas para que todas midan lo mismo */
+.dashboard-view .row.aln-stretch {
     display: flex !important;
     align-items: stretch !important;
 }
 
-/* 2. Forzamos que la columna sea Flex para que su hijo (.form-container) pueda estirarse */
-.row.aln-stretch > div[class*="col-"] {
+.dashboard-view .row.aln-stretch > div {
     display: flex !important;
-    flex-direction: column;
 }
 
-/* 3. La pieza clave: flex-grow: 1 hace que el box blanco ocupe todo el alto de la columna */
-.row.aln-stretch .form-container {
-    flex-grow: 1; 
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between; /* El botón siempre irá al final */
+/* Formateo de la caja blanca (Card) */
+.dashboard-view .form-container {
+    flex-grow: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important; /* Mantiene el botón al fondo */
+    min-height: 100%; 
     padding: 2.5em;
-    margin-bottom: 0; /* El margen lo maneja la grilla */
-}
-
-/* 4. Ajuste para que el texto no quede pegado al botón */
-.card-content {
     margin-bottom: 2em;
+    box-sizing: border-box;
 }
 
-/* 5. Espaciado final para no chocar con el footer */
-#main > section {
+/* Espacio inferior de la sección para no chocar con el footer */
+#main > section.dashboard-view {
     padding-bottom: 10em !important;
 }
 
 
-/* Estandarizar botones dentro de las tarjetas del dashboard */
-.row.aln-stretch .form-container .button,
-.row.aln-stretch .form-container button {
-    width: 100% !important;        /* Todos ocupan el ancho total de la tarjeta */
-    height: 3.5em !important;      /* Altura fija para los tres */
-    line-height: 3.5em !important; /* Centra el texto verticalmente */
-    padding: 0 !important;         /* Eliminamos paddings que puedan variar el tamaño */
-    font-size: 0.6em !important;   /* Tamaño de letra uniforme */
-    font-weight: 600 !important;
-    text-transform: uppercase !important;
-    letter-spacing: 1px !important;
-    display: block !important;
-    text-align: center !important;
+/* =============================================================================
+   3. MOTOR DE INFORME A4 (informe_anual.html)
+   Todos estos estilos están protegidos por el ID #report-container.
+   ============================================================================= */
+
+/* Simulación de la hoja de papel A4 */
+#report-container .page-a4 {
+    width: 210mm;
+    height: 297mm;
+    background: white;
+    margin: 20px auto; /* Centrado en pantalla con sombra */
+    box-shadow: 0 0 20px rgba(0,0,0,0.2);
+    box-sizing: border-box;
+    overflow: hidden;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 12pt;
+    color: black !important;
+    position: relative;
+    display: block;
 }
 
-/* Ajuste opcional para los iconos dentro de los botones */
-.row.aln-stretch .form-container .button i,
-.row.aln-stretch .form-container button i {
-    margin-right: 8px;
+/* Contenedor interno del texto que respeta márgenes oficiales (Arial 12) */
+#report-container .page-body {
+    padding-left: var(--margin-left);
+    padding-right: var(--margin-right);
+    padding-bottom: var(--margin-bottom);
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Margen superior para páginas que NO tienen cabezal institucional */
+#report-container .mt-normal { 
+    padding-top: var(--margin-top-normal); 
+}
+
+/* --- DISEÑO DE CARÁTULA --- */
+#report-container .caratula-a4 {
+    background: linear-gradient(to right, var(--color-dglcco) 50%, #ffffff 50%) !important;
+}
+
+#report-container .caratula-content {
+    height: 100%;
+    padding: 2cm;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+#report-container .caratula-box {
+    background: #000 !important;
+    color: white !important;
+    padding: 2.5em;
+    width: 85%;             /* Caja negra centrada al 85% */
+    margin: 0 auto;
+    text-align: center;
+    box-shadow: 10px 10px 0px rgba(0,0,0,0.1);
+}
+
+/* --- CABEZAL INSTITUCIONAL (Hoja 1 de contenido) --- */
+#report-container .header-institucional {
+    width: 100%;
+    height: 5.5cm;          /* Altura fija requerida */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border-bottom: none;    /* Sin línea divisoria */
+    margin-bottom: 0.5cm;
+    padding: 0 1cm;
+    box-sizing: border-box;
+}
+
+#report-container .header-row-1 { text-align: center; height: 1.8cm; margin-bottom: 0.2cm; }
+#report-container .header-row-1 img { height: 100%; width: auto; }
+#report-container .header-row-2 { display: flex; align-items: center; height: 3cm; }
+#report-container .header-col-side { width: 20%; text-align: center; }
+#report-container .header-col-center { width: 60%; text-align: center; }
+#report-container .header-col-side img { max-height: 2.2cm; max-width: 100%; object-fit: contain; }
+
+#report-container .header-col-center p {
+    margin: 0; padding: 0; line-height: 1.1;
+    font-weight: bold; text-transform: uppercase; font-size: 8.5pt;
+}
+
+/* --- ELEMENTOS DE TEXTO Y GRÁFICOS --- */
+#report-container .text-justify { text-align: justify; line-height: 1.3; }
+#report-container h2 { font-size: 14pt; font-weight: bold; text-transform: uppercase; margin-top: 1em; border-bottom: 1px solid #000; }
+#report-container h3 { font-size: 12pt; font-weight: bold; margin-top: 1em; }
+#report-container .stat-highlight { font-weight: bold; color: var(--color-dglcco); }
+#report-container .chart-container { width: 100%; height: 280px; margin: 1em 0; }
+
+
+/* =============================================================================
+   4. COMPONENTES DE INTERFAZ
+   ============================================================================= */
+
+/* Botón Flotante para imprimir (Solo visible en pantalla) */
+.btn-print-float { 
+    position: fixed; 
+    bottom: 40px; 
+    right: 40px; 
+    width: 65px; 
+    height: 65px; 
+    border-radius: 50%; 
+    z-index: 10000; 
+    background-color: #273C53;
+    color: white !important; 
+    cursor: pointer; 
+    border: none;
+    display: flex; 
+    justify-content: center; 
+    align-items: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+
+.btn-print-float:hover {
+    transform: scale(1.1);
+    background-color: var(--color-dglcco);
 }
 
 
-/* Añadir espacio al final de la sección para que no pegue al footer */
-#main > section {
-    padding-bottom: 4em !important; /* Espacio generoso abajo */
-}
+/* =============================================================================
+   5. AJUSTES DE IMPRESIÓN (PDF)
+   Define qué sucede cuando el usuario pulsa Imprimir.
+   ============================================================================= */
+@media print {
+    /* Establecer tamaño de papel físico */
+    @page { 
+        size: A4; 
+        margin: 0; 
+    }
 
-/* También podemos asegurar que el container tenga su propio margen inferior */
-.container {
-    padding-bottom: 4em;
-}
+    body { background: none !important; }
 
-/* Opcional: Si quieres que el footer tenga una separación física clara 
-    border-top: 1px solid rgba(0, 0, 0, 0.05);
-    margin-top: 0;
+    /* Ocultar elementos de la web que no van en el papel */
+    #header, #footer, .no-print, .btn-print-float { 
+        display: none !important; 
+    }
+
+    /* Eliminar el margen lateral del sidebar para centrar el informe en el papel */
+    #main { 
+        margin: 0 !important; 
+        padding: 0 !important; 
+    }
+
+    /* Ajuste de las hojas virtuales para que encajen en el papel real */
+    #report-container .page-a4 { 
+        margin: 0 !important; 
+        box-shadow: none !important; 
+        page-break-after: always !important; /* Fuerza salto de página al terminar el div */
+    }
 }
-    */

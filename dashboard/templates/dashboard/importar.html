@@ -35,7 +35,7 @@
                         <input type="file" 
                                id="csv_eventos" 
                                name="csv_eventos" 
-                               accept=".csv" 
+                               accept=".xlsx" 
                                required 
                                title="Seleccione el archivo CSV de Eventos SGSP"
                                style="margin-bottom: 1.5em;">
@@ -52,8 +52,8 @@
                 <div class="form-container" style="height: 100%;">
                     <h3>2. Ampliaciones (Lote Mensual)</h3>
                     <p style="font-size: 0.75em; color: #888; margin-bottom: 1.5em;">
-                        Seleccione múltiples archivos. El nombre DEBE ser <strong>YYYY-MM.csv</strong> 
-                        para asignar el periodo correctamente (Ej: 2025-03.csv).
+                        Seleccione múltiples archivos. El nombre DEBE ser <strong>YYYY-MM.xlsx</strong> 
+                        para asignar el periodo correctamente (Ej: 2025-03.xlsx).
                     </p>
                     
                     <form id="form-ampliaciones" method="post" enctype="multipart/form-data">
@@ -63,7 +63,7 @@
                         <input type="file" 
                                id="input-ampliaciones" 
                                name="csv_ampliaciones" 
-                               accept=".csv" 
+                               accept=".xlsx"
                                multiple 
                                required 
                                title="Seleccione uno o más archivos con formato YYYY-MM.csv"
@@ -104,13 +104,12 @@
     document.getElementById('form-ampliaciones').addEventListener('submit', function(e) {
         const input = document.getElementById('input-ampliaciones');
         const files = input.files;
-        // Patrón: 4 dígitos - mes (01 a 12) .csv
-        const regex = /^\d{4}-(0[1-9]|1[0-2])\.csv$/;
+        const regex = /^\d{4}-(0[1-9]|1[0-2])\.xlsx$/; // Cambiado a .xlsx
 
         for (let i = 0; i < files.length; i++) {
             if (!regex.test(files[i].name)) {
                 e.preventDefault(); 
-                alert("ERROR DE FORMATO:\n\nEl archivo '" + files[i].name + "' no es válido.\n\nSolo se permiten nombres con el formato AAAA-MM.csv (Ejemplo: 2025-05.csv).");
+                alert("ERROR: El archivo debe llamarse YYYY-MM.xlsx");
                 return;
             }
         }
