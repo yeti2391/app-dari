@@ -51,7 +51,7 @@
 				data() {
 					return {
 						// --- NAVEGACIÓN Y ESTADO ---
-						seccionActual: 'buscar',
+						seccionActual: window.location.pathname.includes('/DRBPA/') ? 'inicio' : 'buscar',
 						cargando: false,
 
 						// --- BÚSQUEDA ---
@@ -154,6 +154,9 @@
 					},
 					esDashboard() {
 						return window.location.pathname.includes('/dashboard/');
+					},
+					esDRBPA() {
+						return window.location.pathname.includes('/DRBPA/');
 					},
 				},
 

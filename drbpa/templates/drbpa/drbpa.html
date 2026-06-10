@@ -1,0 +1,71 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}Departamento de Registro y Búsqueda de Personas Ausentes{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'drbpa/css/drbpa.css' %}">
+{% endblock %}
+
+{% block body %}
+<section class="drbpa-view">
+    <div class="container">
+        
+        <!-- ENCABEZADO CON LOGO REDONDEADO -->
+        <div class="logo-container">
+            <img src="{% static 'drbpa/img/drbpa-logo.webp' %}" alt="Logo DRBPA" class="logo-dept">
+            <header style="margin-top: 1em;">
+                <h2>Registro y Búsqueda de Personas Ausentes</h2>
+                <p>Dirección General de Lucha Contra el Crimen Organizado e INTERPOL</p>
+            </header>
+        </div>
+
+        <!-- MENU PRINCIPAL (Solo se ve si seccionActual === 'inicio') -->
+        <div class="row aln-center" v-show="seccionActual === 'inicio'">
+            
+            <!-- Botón: Ver Registros -->
+            <div class="col-5 col-12-mobile">
+                <div class="form-container" @click="seccionActual = 'listado'">
+                    <i class="fas fa-address-book icon-large"></i>
+                    <h3>Ver Registros</h3>
+                    <p style="font-size: 0.8em; color: #666;">Consulta la base de datos de personas ausentes, buscadas o localizadas.</p>
+                    <button class="button small">Entrar al Listado</button>
+                </div>
+            </div>
+
+            <!-- Botón: Agregar Registro -->
+            <div class="col-5 col-12-mobile">
+                <div class="form-container" @click="seccionActual = 'nuevo'">
+                    <i class="fas fa-user-plus icon-large"></i>
+                    <h3>Nuevo Registro</h3>
+                    <p style="font-size: 0.8em; color: #666;">Inicie una nueva ficha de búsqueda con datos filiatorios y señas particulares.</p>
+                    <button class="button primary small">Crear Ficha</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN: LISTADO (Placeholder) -->
+        <div v-show="seccionActual === 'listado'">
+            <header>
+                <button class="button alt small" @click="seccionActual = 'inicio'"><i class="fas fa-arrow-left"></i> Volver</button>
+                <h3 style="margin-top: 1em;">Listado de Personas Ausentes</h3>
+            </header>
+            <div class="form-container">
+                <p>Aquí irá la tabla de registros con filtros...</p>
+            </div>
+        </div>
+
+        <!-- SECCIÓN: NUEVO REGISTRO (Placeholder) -->
+        <div v-show="seccionActual === 'nuevo'">
+            <header>
+                <button class="button alt small" @click="seccionActual = 'inicio'"><i class="fas fa-arrow-left"></i> Cancelar</button>
+                <h3 style="margin-top: 1em;">Nueva Ficha de Persona Ausente</h3>
+            </header>
+            <div class="form-container">
+                <p>Aquí irá el formulario con rasgos físicos y fotos...</p>
+            </div>
+        </div>
+
+    </div>
+</section>
+{% endblock %}

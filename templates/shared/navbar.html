@@ -76,7 +76,14 @@
                     </a>
                 </li>
 
-                <!-- CONTACTO -->
+                <!-- NUEVO: PERSONAS AUSENTES (DRBPA) -->
+                <li :class="{ 'active': esDRBPA }">
+                    <a href="{% url 'drbpa:home' %}">
+                        <span class="icon solid fa-user-secret">Ausentes (DRBPA)</span>
+                    </a>
+                </li>
+
+                <!-- CONTACTO 
                 <li :class="{ 'active': seccionActual === 'contacto' }">
                     <a v-if="!esDashboard" href="#" @click.prevent="seccionActual = 'contacto'">
                         <span class="icon solid fa-envelope">Contacto</span>
@@ -84,7 +91,7 @@
                     <a v-else href="{% url 'core:home' %}?s=contacto">
                         <span class="icon solid fa-envelope">Contacto</span>
                     </a>
-                </li>
+                </li>-->
             </ul>
         </nav>
 

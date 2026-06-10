@@ -1,0 +1,43 @@
+/* drbpa/static/drbpa/css/drbpa.css */
+
+.drbpa-view .logo-container {
+    text-align: center;
+    margin-bottom: 2em;
+}
+
+.drbpa-view .logo-dept {
+    width: 180px;
+    height: 180px;
+    border-radius: 50%; /* Hace el logo redondo */
+    object-fit: cover;
+    border: 5px solid #fff;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    background-color: white;
+}
+
+/* Colores distintivos para DRBPA (podemos usar un tono diferente al DARI) */
+.drbpa-view h2 {
+    color: #2c3e50;
+}
+
+.drbpa-view .form-container {
+    transition: transform 0.3s ease;
+    cursor: pointer;
+    min-height: 250px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+.drbpa-view .form-container:hover {
+    transform: translateY(-10px);
+    border-color: #5983b0;
+}
+
+.drbpa-view .icon-large {
+    font-size: 4em;
+    color: #5983b0;
+    margin-bottom: 15px;
+}

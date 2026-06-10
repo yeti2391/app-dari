@@ -35,7 +35,7 @@ urlpatterns = [
     path('login-success/', login_success, name='login_success'),
     # APPS POR DEPARTAMENTO
     path('DARI/', include('core.urls')),
-    # path('DRBPA/', include('drbpa.urls')), # Futura app    
+    path('DRBPA/', include('drbpa.urls')), 
     # Si alguien entra a la raíz, mandarlo al login
     path('', lambda req: redirect('login')),
     # agregamos la ruta para el dashboard

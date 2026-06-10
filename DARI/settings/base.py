@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     # MIS APPS
     'core',
     'dashboard',
+    'drbpa',
 ]
 
 MIDDLEWARE = [
