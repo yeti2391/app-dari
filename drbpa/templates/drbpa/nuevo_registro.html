@@ -1,0 +1,130 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block body %}
+<section id="nuevo_registro_drbpa">
+    <div class="container">
+        <header>
+            <h2><i class="fas fa-plus-circle"></i> Nuevo Registro de Persona Ausente</h2>
+            <p>Complete la información inicial para la apertura del caso (Puntos 1 al 20).</p>
+            <a href="{% url 'drbpa:home' %}" class="button small alt icon solid fa-arrow-left">Volver al Panel</a>
+        </header>
+
+        {% verbatim %}
+        <div class="form-container">
+            <form @submit.prevent="guardarFicha">
+                <div class="row gtr-uniform">
+                    
+                    <!-- FILA 1: DATOS DEL CASO -->
+                    <div class="col-4 col-12-mobile">
+                        <label>Equipo Asignado</label>
+                        <select v-model="form.equipo">
+                            <option value="">Sin asignar (Pendiente)</option>
+                            <option value="EQUIPO 1">EQUIPO 1</option>
+                            <option value="EQUIPO 2">EQUIPO 2</option>
+                        </select>
+                    </div>
+                    <div class="col-8 col-12-mobile">
+                        <label>Número de Registro Interno</label>
+                        <input type="text" placeholder="El sistema generará el nro correlativo automáticamente" disabled style="background: #f0f4f8;">
+                    </div>
+
+                    <div class="col-12"><hr></div>
+
+                    <!-- FILA 2: IDENTIFICACIÓN (Buscador/Autocompletado) -->
+                    <div class="col-4 col-12-mobile">
+                        <label>Tipo de Documento</label>
+                        <select v-model="form.tipo_doc_id" required>
+                            <option value="">Seleccione...</option>
+                            <!-- Usamos tiposDocumento que ya se carga en base.html -->
+                            <option v-for="t in tiposDocumento" :key="t.id" :value="t.id">{{ t.nombre }}</option>
+                        </select>
+                    </div>
+                    <div class="col-8 col-12-mobile">
+                        <label>Nro. de Documento (Escriba para verificar si ya existe)</label>
+                        <input type="text" v-model="form.documento" @blur="verificarPersona" placeholder="Ej: 12345678">
+                        <small v-if="personaExiste" style="color: #28a745; font-weight: bold;">
+                            <i class="fas fa-check-double"></i> Persona detectada. Datos personales autocompletados.
+                        </small>
+                    </div>
+
+                    <!-- FILA 3: NOMBRES (50/50) -->
+                    <div class="col-6 col-12-mobile">
+                        <label>Primer Nombre</label>
+                        <input type="text" v-model="form.p_nombre" :disabled="personaExiste" required>
+                    </div>
+                    <div class="col-6 col-12-mobile">
+                        <label>Segundo Nombre</label>
+                        <input type="text" v-model="form.s_nombre" :disabled="personaExiste">
+                    </div>
+
+                    <!-- FILA 4: APELLIDOS (50/50) -->
+                    <div class="col-6 col-12-mobile">
+                        <label>Primer Apellido</label>
+                        <input type="text" v-model="form.p_apellido" :disabled="personaExiste" required>
+                    </div>
+                    <div class="col-6 col-12-mobile">
+                        <label>Segundo Apellido</label>
+                        <input type="text" v-model="form.s_apellido" :disabled="personaExiste">
+                    </div>
+
+                    <!-- FILA 5: ALIAS Y GENERO -->
+                    <div class="col-8 col-12-mobile">
+                        <label>Alias / Apodos</label>
+                        <input type="text" v-model="form.alias" placeholder="Ej: EL CHINO, PEPE">
+                    </div>
+                    <div class="col-4 col-12-mobile">
+                        <label>Género</label>
+                        <select v-model="form.genero" required>
+                            <option value="MASCULINO">Masculino</option>
+                            <option value="FEMENINO">Femenino</option>
+                            <option value="DIVERSO">Diverso</option>
+                        </select>
+                    </div>
+
+                    <!-- FILA 6: NACIMIENTO Y EDAD -->
+                    <div class="col-4 col-12-mobile">
+                        <label>Fecha de Nacimiento</label>
+                        <input type="date" v-model="form.fecha_nac" :disabled="personaExiste">
+                    </div>
+                    <div class="col-2 col-12-mobile">
+                        <label>Edad</label>
+                        <input type="text" :value="calcularEdadFrontend" disabled placeholder="---">
+                    </div>
+                    <div class="col-6 col-12-mobile">
+                        <label>País de Nacimiento</label>
+                        <input list="paises-drbpa" v-model="form.pais_nombre" :disabled="personaExiste">
+                        <datalist id="paises-drbpa">
+                            <option v-for="p in paises" :value="p.nombre"></option>
+                        </datalist>
+                    </div>
+
+                    <div class="col-12"><hr></div>
+
+                    <!-- FILA 7: GEOGRAFÍA DEL HECHO -->
+                    <div class="col-6 col-12-mobile">
+                        <label>Departamento de la Ausencia</label>
+                        <select v-model="form.depto_id" @change="filtrarDeps" required>
+                            <option value="">Seleccione Departamento...</option>
+                            <option v-for="d in maestros.departamentos" :key="d.id" :value="d.id">{{ d.nombre }}</option>
+                        </select>
+                    </div>
+                    <div class="col-6 col-12-mobile">
+                        <label>Seccional / Dependencia Policial</label>
+                        <select v-model="form.dep_id" required :disabled="!form.depto_id">
+                            <option value="">Seleccione Dependencia...</option>
+                            <option v-for="d in dependenciasFiltradas" :key="d.id" :value="d.id">{{ d.nombre }}</option>
+                        </select>
+                    </div>
+
+                    <div class="col-12" style="margin-top: 2em;">
+                        <button type="submit" class="button primary fit icon solid fa-save">Finalizar Registro Inicial</button>
+                    </div>
+
+                </div>
+            </form>
+        </div>
+        {% endverbatim %}
+    </div>
+</section>
+{% endblock %}

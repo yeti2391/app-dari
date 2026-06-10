@@ -51,17 +51,21 @@
 				data() {
 					return {
 						// --- NAVEGACIÓN Y ESTADO ---
-						seccionActual: window.location.pathname.includes('/DRBPA/') ? 'inicio' : 'buscar',
+						seccionActual: (function() {
+							const path = window.location.pathname;
+							if (path.includes('/DRBPA/nuevo/')) return 'nuevo'; // Si es la URL del formulario
+							if (path.includes('/DRBPA/')) return 'inicio';      // Si es el panel de DRBPA
+							return 'buscar';                                    // Por defecto DARI
+						})(),
 						cargando: false,
 
 						// --- BÚSQUEDA ---
-						tipoBusqueda: 'persona', // 'persona' o 'expediente'
-						queryBusqueda: '',       // Término de búsqueda rápida
-						resultados: [],          // Resultados devueltos por el server
+						tipoBusqueda: 'persona',
+						queryBusqueda: '',
+						resultados: [],
 						paginaActual: 1,
 						resultadosPorPagina: 25,
 						
-						// Filtros para Búsqueda Avanzada
 						filtrosPersona: {
 							nombre1: '', nombre2: '',
 							apellido1: '', apellido2: '',
@@ -73,30 +77,27 @@
 							id: null, codigo: '', observaciones: '',
 							subido_alfresco: false, personas: [], movimientos: []
 						},
-						expedientesRecientes: [], // Lista de los últimos 10
+						expedientesRecientes: [],
 						nuevoExpediente: {
 							codigo: '', oficina_id: '',
 							fecha: new Date().toISOString().split('T')[0],
 							observaciones: ''
 						},
 						
-						// Edición de observaciones
 						editandoObs: false,
 						obsTemporal: '',
 
 						// --- GESTIÓN DE PERSONAS ---
-						personasVinculadas: [], // Personas del expediente actual
+						personasVinculadas: [],
 						nuevaPersona: {
 							primer_nombre: '', segundo_nombre: '',
 							primer_apellido: '', segundo_apellido: '',
 							alias: '', tipo_documento_id: '', documento: '',
 							fecha_nacimiento: '', nacionalidad_nombre: '', rol: 'indagado'
 						},
-						// Buscador de personas existentes
 						queryPersonaExistente: '',
 						resultadosSugeridos: [],
 
-						// Perfil de Persona (Ficha Individual)
 						personaPerfil: {
 							id: null, primer_nombre: '', segundo_nombre: '',
 							primer_apellido: '', segundo_apellido: '',
@@ -105,29 +106,52 @@
 						},
 						nuevoDocPerfil: { tipo_documento_id: '', numero: '' },
 						nuevoAliasPerfil: '',
-						editandoPersona: false, // Toggle edición biográfica
-						personaEdit: {},        // Copia para el formulario de edición
+						editandoPersona: false,
+						personaEdit: {},
 
-						// --- MOVIMIENTOS (TRASLADOS) ---
+						// --- MOVIMIENTOS ---
 						nuevoMovimiento: {
 							codigo_expediente: '', origen_id: '', destino_id: '',
 							fecha: '', entregado_por: '', recibido_por: '', observaciones: ''
 						},
 						ultimoDestinoId: null,
+						historialBusqueda: [],
 
-						// --- LISTADO DE OFICINAS INACTIVAS ---
+						// --- OFICINAS INACTIVAS ---
 						mostrarInactivasOrigen: false,
 						mostrarInactivasDestino: false,
 						mostrarInactivasCrear: false,
-						// --- DATOS MAESTROS (Cargados desde API) ---
+
+						// --- DATOS MAESTROS ---
 						oficinas: [],
 						paises: [],
-						tiposDocumento: []
+						tiposDocumento: [],
+
+						// --- APP DRBPA (CORREGIDO: Ahora dentro del return) ---
+						maestros: {
+							paises: [],
+							tipos_doc: [],
+							departamentos: [],
+							dependencias: []
+						},
+						form: {
+							tipo_doc_id: '', documento: '',
+							p_nombre: '', s_nombre: '',
+							p_apellido: '', s_apellido: '',
+							alias: '', genero: 'MASCULINO',
+							fecha_nac: '', edad: '',
+							pais_nombre: 'URUGUAY',
+							depto_id: '', dep_id: '',
+							equipo: '', lugar: 'DOMICILIO',
+							nro_sgsp: '', tipificacion: '',
+							f_hecho: '', f_ingreso_sgsp: ''
+						},
+						personaExiste: false,
+						dependenciasFiltradas: []
 					}
 				},
 
 				computed: {
-					// Corta los resultados para la paginación
 					resultadosPaginados() {
 						let inicio = (this.paginaActual - 1) * this.resultadosPorPagina;
 						return this.resultados.slice(inicio, inicio + this.resultadosPorPagina);
@@ -135,11 +159,9 @@
 					totalPaginas() {
 						return Math.ceil(this.resultados.length / this.resultadosPorPagina);
 					},
-					// Muestra solo los 3 movimientos más nuevos en la ficha de detalles
 					movimientosResumidos() {
-						return this.expediente.movimientos ? this.expediente.movimientos.slice(0, 3) : [];
+						return (this.expediente.movimientos && this.expediente.movimientos.length > 0) ? this.expediente.movimientos.slice(0, 3) : [];
 					},
-					// OFICINAS INACTIVAS
 					oficinasFiltradasCrear() {
 						if (this.mostrarInactivasCrear) return this.oficinas;
 						return this.oficinas.filter(o => o.activa);
@@ -158,35 +180,41 @@
 					esDRBPA() {
 						return window.location.pathname.includes('/DRBPA/');
 					},
+					calcularEdadFrontend() {
+						if (!this.form.fecha_nac) return '';
+						const birthDate = new Date(this.form.fecha_nac);
+						const today = new Date();
+						let age = today.getFullYear() - birthDate.getFullYear();
+						const m = today.getMonth() - birthDate.getMonth();
+						if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+							age--;
+						}
+						return age;
+					},
 				},
 
 				mounted() {
-					// 1. Cargamos datos maestros
 					this.cargarOficinas();
 					this.cargarPaises();
 					this.cargarTiposDocumento();
 					this.cargarRecientes();
 
-					// 2. LÓGICA DE NAVEGACIÓN ENTRE APPS:
-					// Revisamos si en la URL hay un parámetro 's' (sección)
+					if (this.esDRBPA) {
+						this.cargarMaestrosDRBPA();
+					}
+
 					const urlParams = new URLSearchParams(window.location.search);
 					const seccionDesdeUrl = urlParams.get('s');
-
-					if (seccionDesdeUrl) {
-						this.seccionActual = seccionDesdeUrl;
-					}
+					if (seccionDesdeUrl) this.seccionActual = seccionDesdeUrl;
 				},
 
 				methods: {
-					// --- API HELPERS ---
 					async apiFetch(url, options = {}) {
-						// Helper para centralizar las llamadas y el prefijo /DARI/
 						const response = await fetch(`/DARI${url}`, options);
 						if (!response.ok) throw new Error('Error en la petición');
 						return await response.json();
 					},
 
-					// --- MÉTODOS DE CARGA INICIAL ---
 					async cargarOficinas() {
 						try { const data = await this.apiFetch('/api/oficinas/'); this.oficinas = data.oficinas; }
 						catch (e) { console.error("Error oficinas:", e); }
@@ -204,15 +232,15 @@
 						catch (e) { console.error("Error recientes:", e); }
 					},
 
-					// --- MÉTODOS DE BÚSQUEDA ---
 					async buscar() {
 						if (!this.queryBusqueda.trim()) return;
 						this.cargando = true;
 						this.paginaActual = 1;
+						this.filtrosPersona = { nombre1: '', nombre2: '', apellido1: '', apellido2: '', documento: '', alias: '' };
 						try {
 							const data = await this.apiFetch(`/api/buscar/?tipo=${this.tipoBusqueda}&q=${encodeURIComponent(this.queryBusqueda)}&mode=quick`);
 							this.resultados = data.resultados;
-						} catch (e) { alert("Error en búsqueda rápida"); }
+						} catch (e) { console.error(e); }
 						finally { this.cargando = false; }
 					},
 
@@ -221,22 +249,17 @@
 						this.paginaActual = 1;
 						try {
 							let params = new URLSearchParams({
-								tipo: 'persona',
-								mode: 'advanced',
-								n1: this.filtrosPersona.nombre1,
-								n2: this.filtrosPersona.nombre2,
-								a1: this.filtrosPersona.apellido1,
-								a2: this.filtrosPersona.apellido2,
-								doc: this.filtrosPersona.documento,
-								alias: this.filtrosPersona.alias
+								tipo: 'persona', mode: 'advanced',
+								n1: this.filtrosPersona.nombre1, n2: this.filtrosPersona.nombre2,
+								a1: this.filtrosPersona.apellido1, a2: this.filtrosPersona.apellido2,
+								doc: this.filtrosPersona.documento, alias: this.filtrosPersona.alias
 							});
 							const data = await this.apiFetch(`/api/buscar/?${params.toString()}`);
 							this.resultados = data.resultados;
-						} catch (e) { alert("Error en búsqueda avanzada"); }
+						} catch (e) { console.error(e); }
 						finally { this.cargando = false; }
 					},
 
-					// --- GESTIÓN DE EXPEDIENTE ---
 					async verDetalles(id) {
 						this.cargando = true;
 						try {
@@ -245,7 +268,7 @@
 							this.personasVinculadas = data.personas;
 							this.ultimoDestinoId = data.movimientos.length > 0 ? data.movimientos[0].destino_id : data.oficina_id;
 							this.seccionActual = 'detalles';
-						} catch (e) { alert("Error al cargar expediente"); }
+						} catch (e) { console.error(e); }
 						finally { this.cargando = false; }
 					},
 
@@ -259,16 +282,15 @@
 							this.expediente.observaciones = this.obsTemporal;
 							this.editandoObs = false;
 							alert("Observaciones actualizadas.");
-						} catch (e) { alert("Error al guardar observaciones"); }
+						} catch (e) { console.error(e); }
 					},
 
-					// --- GESTIÓN DE PERSONAS ---
 					async verPerfilPersona(id) {
 						try {
 							const data = await this.apiFetch(`/api/persona/${id}/`);
 							this.personaPerfil = data;
 							this.seccionActual = 'persona_perfil';
-						} catch (e) { alert("Error al cargar perfil"); }
+						} catch (e) { console.error(e); }
 					},
 
 					async agregarPersona() {
@@ -278,38 +300,11 @@
 								headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
 								body: JSON.stringify(this.nuevaPersona)
 							});
-
 							if (response.ok) {
-								alert("Persona vinculada correctamente al expediente.");
-
-								// RECARGAMOS la lista de personas para ver los cambios reales del server
+								alert("Persona vinculada.");
 								this.verDetalles(this.expediente.id);
-
-								// LIMPIEZA DEL FORMULARIO (Sección Vincular Nueva Persona)
-								this.nuevaPersona = {
-									primer_nombre: '', 
-									segundo_nombre: '',
-									primer_apellido: '', 
-									segundo_apellido: '',
-									alias: '', 
-									tipo_documento_id: '', 
-									documento: '',
-									fecha_nacimiento: '', 
-									nacionalidad_nombre: '', 
-									rol: 'indagado'
-								};
-
-								// LIMPIEZA DE BÚSQUEDA (Sección Vincular Persona Registrada)
-								this.queryPersonaExistente = '';
-								this.resultadosSugeridos = [];
-
-							} else {
-								alert("Error al intentar vincular la persona.");
 							}
-						} catch (error) {
-							console.error(error);
-							alert("Error de conexión con el servidor.");
-						}
+						} catch (e) { console.error(e); }
 					},
 
 					async quitarPersona(personaId) {
@@ -321,10 +316,9 @@
 								body: JSON.stringify({ persona_id: personaId })
 							});
 							this.verDetalles(this.expediente.id);
-						} catch (e) { alert("Error al desvincular"); }
+						} catch (e) { console.error(e); }
 					},
 
-					// --- EDICIÓN BIOGRÁFICA ---
 					activarEdicionPersona() {
 						this.personaEdit = {
 							primer_nombre: this.personaPerfil.primer_nombre,
@@ -347,13 +341,12 @@
 							alert("Perfil actualizado.");
 							this.editandoPersona = false;
 							this.verPerfilPersona(this.personaPerfil.id);
-						} catch (e) { alert("Error al actualizar biografía"); }
+						} catch (e) { console.error(e); }
 					},
 
-					// --- MÉTODOS RESTANTES (REQUERIDOS POR TEMPLATE) ---
 					activarEdicionObs() { this.obsTemporal = this.expediente.observaciones; this.editandoObs = true; },
 					cancelarEdicionObs() { this.editandoObs = false; },
-					async cargarRecientes() { try { const data = await this.apiFetch('/api/recientes/'); this.expedientesRecientes = data.recientes; } catch(e){} },
+
 					abrirRegistroMovimiento() {
 						this.nuevoMovimiento = {
 							codigo_expediente: this.expediente.codigo, origen_id: this.ultimoDestinoId,
@@ -362,6 +355,7 @@
 						};
 						this.seccionActual = 'registrar_movimiento';
 					},
+
 					async guardarMovimiento() {
 						try {
 							await this.apiFetch('/api/movimientos/registrar/', {
@@ -373,6 +367,7 @@
 							this.verDetalles(this.expediente.id);
 						} catch(e){ alert("Error en traslado"); }
 					},
+
 					async guardarCambioAlfresco() {
 						try {
 							await this.apiFetch(`/api/expediente/${this.expediente.id}/alfresco/`, {
@@ -381,15 +376,17 @@
 								body: JSON.stringify({ estado: this.expediente.subido_alfresco })
 							});
 							alert("Estado digital guardado.");
-						} catch(e){}
+						} catch(e){ console.error(e); }
 					},
+
 					async buscarPersonaExistente() {
 						if (this.queryPersonaExistente.length < 3) { this.resultadosSugeridos = []; return; }
 						try {
 							const data = await this.apiFetch(`/api/buscar/?q=${encodeURIComponent(this.queryPersonaExistente)}&tipo=persona`);
 							this.resultadosSugeridos = data.resultados;
-						} catch(e){}
+						} catch(e){ console.error(e); }
 					},
+
 					async ejecutarVinculoExistente(personaId) {
 						try {
 							await this.apiFetch(`/api/expediente/${this.expediente.id}/vincular-existente/`, {
@@ -399,8 +396,9 @@
 							});
 							this.queryPersonaExistente = ''; this.resultadosSugeridos = [];
 							this.verDetalles(this.expediente.id);
-						} catch(e){}
+						} catch(e){ console.error(e); }
 					},
+
 					async guardarNuevoAliasPerfil() {
 						if (!this.nuevoAliasPerfil.trim()) return;
 						try {
@@ -411,8 +409,9 @@
 							});
 							this.nuevoAliasPerfil = '';
 							this.verPerfilPersona(this.personaPerfil.id);
-						} catch(e){}
+						} catch(e){ console.error(e); }
 					},
+
 					async guardarNuevoDocPerfil() {
 						try {
 							await this.apiFetch(`/api/persona/${this.personaPerfil.id}/identificacion/`, {
@@ -422,8 +421,9 @@
 							});
 							this.nuevoDocPerfil = { tipo_documento_id: '', numero: '' };
 							this.verPerfilPersona(this.personaPerfil.id);
-						} catch(e){}
+						} catch(e){ console.error(e); }
 					},
+
 					async guardarNuevoExpediente() {
 						try {
 							const data = await this.apiFetch('/api/expediente/crear/', {
@@ -435,6 +435,67 @@
 							this.cargarRecientes();
 							this.verDetalles(data.id);
 						} catch(e){ alert("Error al crear. El código podría estar duplicado."); }
+					},
+
+					async buscarHistorial() {
+						try {
+							const res = await fetch(`/DARI/api/movimientos/historial/?codigo=${this.nuevoMovimiento.codigo_expediente}`);
+							const data = await res.json();
+							this.historialBusqueda = data.historial;
+						} catch(e){ console.error(e); }
+					},
+
+					// --- MÉTODOS ESPECÍFICOS DRBPA ---
+					async cargarMaestrosDRBPA() {
+						try {
+							const response = await fetch('/DRBPA/api/maestros-drbpa/');
+							const data = await response.json();
+							this.maestros = data;
+						} catch (e) { console.error("Error cargando maestros DRBPA"); }
+					},
+
+					async verificarPersona() {
+						if(this.form.documento.length > 5) {
+							const res = await fetch(`/DARI/api/buscar/?q=${this.form.documento}&tipo=persona`);
+							const data = await res.json();
+							if(data.resultados.length > 0) {
+								const p = data.resultados[0];
+								this.form.p_nombre = p.primer_nombre;
+								this.form.s_nombre = p.segundo_nombre;
+								this.form.p_apellido = p.primer_apellido;
+								this.form.s_apellido = p.segundo_apellido;
+								this.form.fecha_nac = p.fecha_nacimiento_iso;
+								this.form.pais_nombre = p.nacionalidad_nombre;
+								this.personaExiste = true;
+							} else {
+								this.personaExiste = false;
+							}
+						}
+					},
+
+					filtrarDeps() {
+						this.dependenciasFiltradas = this.maestros.dependencias.filter(
+							d => d.departamento_id === this.form.depto_id
+						);
+					},
+
+					async guardarFicha() {
+						try {
+							const response = await fetch('/DRBPA/api/guardar-ficha/', {
+								method: 'POST',
+								headers: {
+									'Content-Type': 'application/json',
+									'X-CSRFToken': '{{ csrf_token }}'
+								},
+								body: JSON.stringify(this.form)
+							});
+							
+							if (response.ok) {
+								const data = await response.json();
+								alert("Ficha creada con éxito. Caso Nro: " + data.nro_caso);
+								window.location.href = "/DRBPA/"; // Redirigir al panel
+							}
+						} catch (e) { alert("Error al guardar la ficha"); }
 					}
 				}
 			}).mount('#app')

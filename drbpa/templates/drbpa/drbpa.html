@@ -35,12 +35,12 @@
 
             <!-- Botón: Agregar Registro -->
             <div class="col-5 col-12-mobile">
-                <div class="form-container" @click="seccionActual = 'nuevo'">
+                <a href="{% url 'drbpa:nuevo_registro' %}" class="form-container" style="text-decoration: none; color: inherit;">
                     <i class="fas fa-user-plus icon-large"></i>
                     <h3>Nuevo Registro</h3>
                     <p style="font-size: 0.8em; color: #666;">Inicie una nueva ficha de búsqueda con datos filiatorios y señas particulares.</p>
                     <button class="button primary small">Crear Ficha</button>
-                </div>
+                </a>
             </div>
         </div>
 
