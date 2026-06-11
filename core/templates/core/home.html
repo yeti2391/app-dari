@@ -243,38 +243,96 @@
                     </div>
 
                     <!-- Formulario de nueva persona -->
-                    <div class="form-container">
-                        <h3><i class="fas fa-user-plus"></i> Registrar y Vincular Nueva Persona</h3>
-                        <div class="row gtr-uniform">
-                            <div class="col-6 col-12-mobile"><label>1er Nombre</label><input type="text" v-model="nuevaPersona.primer_nombre"></div>
-                            <div class="col-6 col-12-mobile"><label>2do Nombre</label><input type="text" v-model="nuevaPersona.segundo_nombre"></div>
-                            <div class="col-6 col-12-mobile"><label>1er Apellido</label><input type="text" v-model="nuevaPersona.primer_apellido"></div>
-                            <div class="col-6 col-12-mobile"><label>2do Apellido</label><input type="text" v-model="nuevaPersona.segundo_apellido"></div>
-                            <div class="col-6 col-12-mobile"><label>Fecha Nacimiento</label><input type="date" v-model="nuevaPersona.fecha_nacimiento"></div>
-                            <div class="col-6 col-12-mobile"><label>Alias (Varios separados por coma)</label><input type="text" v-model="nuevaPersona.alias"></div>
-                            <div class="col-4 col-12-mobile">
-                                <label>Tipo Doc.</label>
-                                <select v-model="nuevaPersona.tipo_documento_id">
-                                    <option v-for="t in $root.tiposDocumento" :key="t.id" :value="t.id">{{ t.nombre }}</option>
-                                </select>
-                            </div>
-                            <div class="col-8 col-12-mobile"><label>Documento</label><input type="text" v-model="nuevaPersona.documento"></div>
-                            <div class="col-6 col-12-mobile">
-                                <label>Nacionalidad</label>
-                                <input list="l-p" v-model="nuevaPersona.nacionalidad_nombre" placeholder="Buscar país...">
-                                <datalist id="l-p"><option v-for="p in $root.paises" :key="p.id" :value="p.nombre"></option></datalist>
-                            </div>
-                            <div class="col-6 col-12-mobile">
-                                <label>Rol en Causa</label>
-                                <select v-model="nuevaPersona.rol">
-                                    <option value="indagado">Indagado</option>
-                                    <option value="denunciante">Denunciante</option>
-                                    <option value="testigo">Testigo</option>
-                                    <option value="victima">Víctima</option>
+                    <div class="col-8 col-12-mobile">
+                        <div class="form-container">
+                            <h3><i class="fas fa-user-plus"></i> Vincular Nueva Persona</h3>
+                            
+                            <div class="row gtr-uniform">
+                                <!-- 1. IDENTIFICACIÓN AL PRINCIPIO -->
+                                <div class="col-4 col-12-mobile">
+                                    <label>Tipo Doc.</label>
+                                    <select v-model="nuevaPersona.tipo_documento_id" required>
+                                        <option value="">Seleccione...</option>
+                                        <option v-for="t in tiposDocumento" :key="t.id" :value="t.id">
+                                           {{ t.nombre }}
+                                        </option>
+                                    </select>
+                                </div>
+
+                                <div class="col-8 col-12-mobile">
+                                    <label>Nro. de Documento (Escriba para verificar)</label>
+                                    <input type="text" v-model="nuevaPersona.documento" @blur="$root.verificarPersonaDARI" placeholder="Ej: 12345678">
+                                </div>
+
+                                <!-- NUEVA FILA PARA MENSAJES DE VALIDACIÓN -->
+                                <div class="col-12" style="margin-top: -15px; margin-bottom: 10px;">
+                                   
+                                    <transition name="fade">
+                                        <div v-if="documentoValidoDARI">
+                                            <small v-if="personaExisteDARI" style="color: #28a745; font-weight: bold; display: block;">
+                                                <i class="fas fa-check-double"></i> Persona registrada en el sistema. Datos biográficos cargados automáticamente.
+                                            </small>
+                                            <small v-else style="color: #0056b3; font-weight: bold; display: block;">
+                                                <i class="fas fa-id-card"></i> Documento verificado mediante algoritmo. Sujeto nuevo para el sistema.
+                                            </small>
+                                        </div>
+                                    </transition>
                                     
-                                </select>
+                                </div>
+
+                                <div class="col-12"><hr style="margin: 0.5em 0;"></div>
+
+                                <!-- 2. NOMBRES -->
+                                <div class="col-6 col-12-mobile">
+                                    <label>Primer Nombre</label>
+                                    <input type="text" v-model="nuevaPersona.primer_nombre" :disabled="personaExisteDARI">
+                                </div>
+                                <div class="col-6 col-12-mobile">
+                                    <label>Segundo Nombre</label>
+                                    <input type="text" v-model="nuevaPersona.segundo_nombre" :disabled="personaExisteDARI">
+                                </div>
+
+                                <!-- 3. APELLIDOS -->
+                                <div class="col-6 col-12-mobile">
+                                    <label>Primer Apellido</label>
+                                    <input type="text" v-model="nuevaPersona.primer_apellido" :disabled="personaExisteDARI">
+                                </div>
+                                <div class="col-6 col-12-mobile">
+                                    <label>Segundo Apellido</label>
+                                    <input type="text" v-model="nuevaPersona.segundo_apellido" :disabled="personaExisteDARI">
+                                </div>
+
+                                <!-- 4. OTROS DATOS -->
+                                <div class="col-6 col-12-mobile">
+                                    <label>Fecha Nacimiento</label>
+                                    <input type="date" v-model="nuevaPersona.fecha_nacimiento" :disabled="personaExisteDARI">
+                                </div>
+                                <div class="col-6 col-12-mobile">
+                                    <label>Alias / Apodos</label>
+                                    <input type="text" v-model="nuevaPersona.alias" placeholder="Separar por comas">
+                                </div>
+
+                                <div class="col-6 col-12-mobile">
+                                    <label>Nacionalidad</label>
+                                    <input list="lista-paises-dari" v-model="nuevaPersona.nacionalidad_nombre" :disabled="personaExisteDARI">
+                                    <datalist id="lista-paises-dari">
+                                        <option v-for="p in paises" :value="p.nombre"></option>
+                                    </datalist>
+                                </div>
+                                <div class="col-6 col-12-mobile">
+                                    <label>Rol en Expediente</label>
+                                    <select v-model="nuevaPersona.rol">
+                                        <option value="indagado">Indagado</option>
+                                        <option value="victima">Víctima</option>
+                                        <option value="denunciante">Denunciante</option>
+                                        <option value="testigo">Testigo</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-12">
+                                    <button class="button primary fit icon solid fa-save" @click.prevent="$root.agregarPersona">Vincular Sujeto</button>
+                                </div>
                             </div>
-                            <div class="col-12"><button class="button primary fit" @click.prevent="$root.agregarPersona()">Vincular al Expediente</button></div>
                         </div>
                     </div>
                 </div>

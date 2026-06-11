@@ -210,354 +210,460 @@
 				},
 
 				methods: {
-					// --- HELPER PARA API ---
-					async apiFetch(url, options = {}) {
-						const response = await fetch(`/DARI${url}`, options);
-						if (!response.ok) throw new Error('Error en la petición');
-						return await response.json();
-					},
+							// =========================================================================
+							// 1. UTILIDADES Y COMUNICACIÓN CON EL SERVIDOR (API)
+							// =========================================================================
 
-					// --- CARGAS INICIALES ---
-					async cargarOficinas() {
-						try { const data = await this.apiFetch('/api/oficinas/'); this.oficinas = data.oficinas; }
-						catch (e) { console.error("Error oficinas:", e); }
-					},
-					async cargarPaises() {
-						try { const data = await this.apiFetch('/api/paises/'); this.paises = data.paises; }
-						catch (e) { console.error("Error países:", e); }
-					},
-					async cargarTiposDocumento() {
-						try { const data = await this.apiFetch('/api/tipos-documento/'); this.tiposDocumento = data.tipos; }
-						catch (e) { console.error("Error tipos doc:", e); }
-					},
-					async cargarRecientes() {
-						try { const data = await this.apiFetch('/api/recientes/'); this.expedientesRecientes = data.recientes; }
-						catch (e) { console.error("Error recientes:", e); }
-					},
+							/**
+							* Helper centralizado para realizar peticiones fetch.
+							* Añade automáticamente el prefijo /DARI a todas las rutas.
+							*/
+							async apiFetch(url, options = {}) {
+								const response = await fetch(`/DARI${url}`, options);
+								if (!response.ok) throw new Error('Error en la respuesta del servidor');
+								return await response.json();
+							},
 
-					// --- BÚSQUEDAS (DARI) ---
-					async buscar() {
-						if (!this.queryBusqueda.trim()) return;
-						this.cargando = true;
-						this.paginaActual = 1;
-						this.filtrosPersona = { nombre1: '', nombre2: '', apellido1: '', apellido2: '', documento: '', alias: '' };
-						try {
-							const data = await this.apiFetch(`/api/buscar/?tipo=${this.tipoBusqueda}&q=${encodeURIComponent(this.queryBusqueda)}&mode=quick`);
-							this.resultados = data.resultados;
-						} catch (e) { console.error(e); }
-						finally { this.cargando = false; }
-					},
+							// =========================================================================
+							// 2. CARGAS INICIALES DE DATOS MAESTROS
+							// Se ejecutan al montar la aplicación para llenar los selectores (dropdowns).
+							// =========================================================================
 
-					async buscarAvanzado() {
-						this.cargando = true;
-						this.paginaActual = 1;
-						try {
-							let params = new URLSearchParams({
-								tipo: 'persona', mode: 'advanced',
-								n1: this.filtrosPersona.nombre1, n2: this.filtrosPersona.nombre2,
-								a1: this.filtrosPersona.apellido1, a2: this.filtrosPersona.apellido2,
-								doc: this.filtrosPersona.documento, alias: this.filtrosPersona.alias
-							});
-							const data = await this.apiFetch(`/api/buscar/?${params.toString()}`);
-							this.resultados = data.resultados;
-						} catch (e) { console.error(e); }
-						finally { this.cargando = false; }
-					},
+							async cargarOficinas() {
+								try { const data = await this.apiFetch('/api/oficinas/'); this.oficinas = data.oficinas; }
+								catch (e) { console.error("Error al cargar oficinas:", e); }
+							},
+							async cargarPaises() {
+								try { const data = await this.apiFetch('/api/paises/'); this.paises = data.paises; }
+								catch (e) { console.error("Error al cargar países:", e); }
+							},
+							async cargarTiposDocumento() {
+								try { const data = await this.apiFetch('/api/tipos-documento/'); this.tiposDocumento = data.tipos; }
+								catch (e) { console.error("Error al cargar tipos de documento:", e); }
+							},
+							async cargarRecientes() {
+								try { const data = await this.apiFetch('/api/recientes/'); this.expedientesRecientes = data.recientes; }
+								catch (e) { console.error("Error al cargar expedientes recientes:", e); }
+							},
 
-					// --- GESTIÓN DE EXPEDIENTES ---
-					async verDetalles(id) {
-						this.cargando = true;
-						try {
-							const data = await this.apiFetch(`/api/expediente/${id}/`);
-							this.expediente = data;
-							this.personasVinculadas = data.personas;
-							this.ultimoDestinoId = data.movimientos.length > 0 ? data.movimientos[0].destino_id : data.oficina_id;
-							this.seccionActual = 'detalles';
-						} catch (error) { alert("Error al cargar detalles"); }
-						finally { this.cargando = false; }
-					},
+							// =========================================================================
+							// 3. MÓDULO DE BÚSQUEDA (APLICACIÓN DARI)
+							// =========================================================================
 
-					async guardarEdicionObs() {
-						try {
-							await this.apiFetch(`/api/expediente/${this.expediente.id}/update-obs/`, {
-								method: 'POST',
-								headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
-								body: JSON.stringify({ observaciones: this.obsTemporal })
-							});
-							this.expediente.observaciones = this.obsTemporal;
-							this.editandoObs = false;
-							alert("Observaciones actualizadas.");
-						} catch (e) { console.error(e); }
-					},
+							/**
+							* Búsqueda rápida: busca en todos los campos (nombre, alias, documento).
+							* Limpia los filtros avanzados para evitar conflictos.
+							*/
+							async buscar() {
+								if (!this.queryBusqueda.trim()) return;
+								this.cargando = true;
+								this.paginaActual = 1;
+								this.filtrosPersona = { nombre1: '', nombre2: '', apellido1: '', apellido2: '', documento: '', alias: '' };
+								try {
+									const data = await this.apiFetch(`/api/buscar/?tipo=${this.tipoBusqueda}&q=${encodeURIComponent(this.queryBusqueda)}&mode=quick`);
+									this.resultados = data.resultados;
+								} catch (e) { console.error("Error en búsqueda rápida:", e); }
+								finally { this.cargando = false; }
+							},
 
-					// --- GESTIÓN DE PERSONAS ---
-					async verPerfilPersona(id) {
-						try {
-							const data = await this.apiFetch(`/api/persona/${id}/`);
-							this.personaPerfil = data;
-							this.seccionActual = 'persona_perfil';
-						} catch (e) { console.error(e); }
-					},
+							/**
+							* Búsqueda avanzada: utiliza campos específicos para mejorar la velocidad
+							* y precisión atacando directamente las columnas indexadas en PostgreSQL.
+							*/
+							async buscarAvanzado() {
+								this.cargando = true;
+								this.paginaActual = 1;
+								try {
+									let params = new URLSearchParams({
+										tipo: 'persona', mode: 'advanced',
+										n1: this.filtrosPersona.nombre1, n2: this.filtrosPersona.nombre2,
+										a1: this.filtrosPersona.apellido1, a2: this.filtrosPersona.apellido2,
+										doc: this.filtrosPersona.documento, alias: this.filtrosPersona.alias
+									});
+									const data = await this.apiFetch(`/api/buscar/?${params.toString()}`);
+									this.resultados = data.resultados;
+								} catch (e) { console.error("Error en búsqueda avanzada:", e); }
+								finally { this.cargando = false; }
+							},
 
-					async agregarPersona() {
-						try {
-							const response = await fetch(`/DARI/api/expediente/${this.expediente.id}/vincular-persona/`, {
-								method: 'POST',
-								headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
-								body: JSON.stringify(this.nuevaPersona)
-							});
-							if (response.ok) {
-								alert("Persona vinculada.");
-								this.verDetalles(this.expediente.id);
-							}
-						} catch (e) { console.error(e); }
-					},
+							// =========================================================================
+							// 4. GESTIÓN DE EXPEDIENTES
+							// =========================================================================
 
-					async quitarPersona(personaId) {
-						if (!confirm("¿Quitar persona?")) return;
-						try {
-							await this.apiFetch(`/api/expediente/${this.expediente.id}/desvincular/`, {
-								method: 'POST',
-								headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
-								body: JSON.stringify({ persona_id: personaId })
-							});
-							this.verDetalles(this.expediente.id);
-						} catch (e) { console.error(e); }
-					},
+							/**
+							* Carga toda la información de un expediente: personas, observaciones y movimientos.
+							* También identifica la última oficina para autocompletar futuros traslados.
+							*/
+							async verDetalles(id) {
+								this.cargando = true;
+								try {
+									const data = await this.apiFetch(`/api/expediente/${id}/`);
+									this.expediente = data;
+									this.personasVinculadas = data.personas;
+									// Si el expediente ya se movió, el origen es su último destino; si no, su oficina de creación.
+									this.ultimoDestinoId = data.movimientos.length > 0 ? data.movimientos[0].destino_id : data.oficina_id;
+									this.seccionActual = 'detalles';
+								} catch (error) { alert("Error al cargar los detalles del expediente."); }
+								finally { this.cargando = false; }
+							},
 
-					activarEdicionPersona() {
-						this.personaEdit = {
-							primer_nombre: this.personaPerfil.primer_nombre,
-							segundo_nombre: this.personaPerfil.segundo_nombre,
-							primer_apellido: this.personaPerfil.primer_apellido,
-							segundo_apellido: this.personaPerfil.segundo_apellido,
-							fecha_nacimiento: this.personaPerfil.fecha_nacimiento_iso,
-							nacionalidad_nombre: this.personaPerfil.nacionalidad
-						};
-						this.editandoPersona = true;
-					},
+							/**
+							* Guarda la edición de la caja de observaciones del expediente.
+							*/
+							async guardarEdicionObs() {
+								try {
+									await this.apiFetch(`/api/expediente/${this.expediente.id}/update-obs/`, {
+										method: 'POST',
+										headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+										body: JSON.stringify({ observaciones: this.obsTemporal })
+									});
+									this.expediente.observaciones = this.obsTemporal;
+									this.editandoObs = false;
+									alert("Observaciones actualizadas.");
+								} catch (e) { console.error("Error al actualizar observaciones:", e); }
+							},
 
-					async guardarEdicionPersona() {
-						try {
-							await this.apiFetch(`/api/persona/${this.personaPerfil.id}/update-bio/`, {
-								method: 'POST',
-								headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
-								body: JSON.stringify(this.personaEdit)
-							});
-							alert("Perfil actualizado.");
-							this.editandoPersona = false;
-							this.verPerfilPersona(this.personaPerfil.id);
-						} catch (e) { console.error(e); }
-					},
+							activarEdicionObs() { this.obsTemporal = this.expediente.observaciones; this.editandoObs = true; },
+							cancelarEdicionObs() { this.editandoObs = false; },
 
-					activarEdicionObs() { this.obsTemporal = this.expediente.observaciones; this.editandoObs = true; },
-					cancelarEdicionObs() { this.editandoObs = false; },
+							// =========================================================================
+							// 5. GESTIÓN DE PERSONAS E IDENTIDADES
+							// =========================================================================
 
-					abrirRegistroMovimiento() {
-						this.nuevoMovimiento = {
-							codigo_expediente: this.expediente.codigo, origen_id: this.ultimoDestinoId,
-							destino_id: '', fecha: new Date().toISOString().slice(0, 16),
-							entregado_por: '', recibido_por: '', observaciones: ''
-						};
-						this.seccionActual = 'registrar_movimiento';
-					},
+							/**
+							* Carga la ficha biográfica completa de una persona (Perfil).
+							*/
+							async verPerfilPersona(id) {
+								try {
+									const data = await this.apiFetch(`/api/persona/${id}/`);
+									this.personaPerfil = data;
+									this.seccionActual = 'persona_perfil';
+								} catch (e) { console.error("Error al cargar el perfil:", e); }
+							},
 
-					async guardarMovimiento() {
-						try {
-							await this.apiFetch('/api/movimientos/registrar/', {
-								method: 'POST',
-								headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
-								body: JSON.stringify(this.nuevoMovimiento)
-							});
-							alert("Traslado registrado.");
-							this.verDetalles(this.expediente.id);
-						} catch(e){ alert("Error en traslado"); }
-					},
+							/**
+							* Valida el documento e intenta vincular una persona nueva al expediente actual.
+							*/
+							async agregarPersona() {
+								try {
+									const response = await fetch(`/DARI/api/expediente/${this.expediente.id}/vincular-persona/`, {
+										method: 'POST',
+										headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+										body: JSON.stringify(this.nuevaPersona)
+									});
+									if (response.ok) {
+										alert("Persona vinculada correctamente.");
+										this.verDetalles(this.expediente.id); // Refresca la tabla inferior
+										// Reset de estados de validación
+										this.documentoValidoDARI = false;
+										this.personaExisteDARI = false;
+									}
+								} catch (e) { console.error("Error al vincular persona:", e); }
+							},
 
-					async guardarCambioAlfresco() {
-						try {
-							await this.apiFetch(`/api/expediente/${this.expediente.id}/alfresco/`, {
-								method: 'POST',
-								headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
-								body: JSON.stringify({ estado: this.expediente.subido_alfresco })
-							});
-							alert("Estado digital guardado.");
-						} catch(e){ console.error(e); }
-					},
+							/**
+							* Rompe la relación entre una persona y el expediente (no borra al sujeto).
+							*/
+							async quitarPersona(personaId) {
+								if (!confirm("¿Está seguro de que desea quitar a esta persona del expediente?")) return;
+								try {
+									await this.apiFetch(`/api/expediente/${this.expediente.id}/desvincular/`, {
+										method: 'POST',
+										headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+										body: JSON.stringify({ persona_id: personaId })
+									});
+									this.verDetalles(this.expediente.id);
+								} catch (e) { console.error("Error al desvincular:", e); }
+							},
 
-					async buscarPersonaExistente() {
-						if (this.queryPersonaExistente.length < 3) { this.resultadosSugeridos = []; return; }
-						try {
-							const data = await this.apiFetch(`/api/buscar/?q=${encodeURIComponent(this.queryPersonaExistente)}&tipo=persona`);
-							this.resultadosSugeridos = data.resultados;
-						} catch(e){ console.error(e); }
-					},
+							// =========================================================================
+							// 6. TRASLADOS Y LOGÍSTICA
+							// =========================================================================
 
-					async ejecutarVinculoExistente(personaId) {
-						try {
-							await this.apiFetch(`/api/expediente/${this.expediente.id}/vincular-existente/`, {
-								method: 'POST',
-								headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
-								body: JSON.stringify({ persona_id: personaId, rol: 'indagado' })
-							});
-							this.queryPersonaExistente = ''; this.resultadosSugeridos = [];
-							this.verDetalles(this.expediente.id);
-						} catch(e){ console.error(e); }
-					},
+							/**
+							* Prepara el formulario de traslado con la oficina de origen autocompletada.
+							*/
+							abrirRegistroMovimiento() {
+								this.nuevoMovimiento = {
+									codigo_expediente: this.expediente.codigo, 
+									origen_id: this.ultimoDestinoId,
+									destino_id: '', 
+									fecha: new Date().toISOString().slice(0, 16),
+									entregado_por: '', recibido_por: '', observaciones: ''
+								};
+								this.seccionActual = 'registrar_movimiento';
+							},
 
-					async guardarNuevoAliasPerfil() {
-						if (!this.nuevoAliasPerfil.trim()) return;
-						try {
-							await this.apiFetch(`/api/persona/${this.personaPerfil.id}/alias/`, {
-								method: 'POST',
-								headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
-								body: JSON.stringify({ alias: this.nuevoAliasPerfil })
-							});
-							this.nuevoAliasPerfil = '';
-							this.verPerfilPersona(this.personaPerfil.id);
-						} catch(e){ console.error(e); }
-					},
+							async guardarMovimiento() {
+								try {
+									await this.apiFetch('/api/movimientos/registrar/', {
+										method: 'POST',
+										headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+										body: JSON.stringify(this.nuevoMovimiento)
+									});
+									alert("Traslado registrado y ubicación del expediente actualizada.");
+									this.verDetalles(this.expediente.id);
+								} catch(e){ alert("Error al registrar el traslado."); }
+							},
 
-					async guardarNuevoDocPerfil() {
-						try {
-							await this.apiFetch(`/api/persona/${this.personaPerfil.id}/identificacion/`, {
-								method: 'POST',
-								headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
-								body: JSON.stringify(this.nuevoDocPerfil)
-							});
-							this.nuevoDocPerfil = { tipo_documento_id: '', numero: '' };
-							this.verPerfilPersona(this.personaPerfil.id);
-						} catch(e){ console.error(e); }
-					},
+							// =========================================================================
+							// 7. ALGORITMOS DE VALIDACIÓN (CÉDULA URUGUAYA)
+							// =========================================================================
 
-					async guardarNuevoExpediente() {
-						try {
-							const data = await this.apiFetch('/api/expediente/crear/', {
-								method: 'POST',
-								headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
-								body: JSON.stringify(this.nuevoExpediente)
-							});
-							alert("Expediente creado.");
-							this.cargarRecientes();
-							this.verDetalles(data.id);
-						} catch(e){ alert("Error al crear. El código podría estar duplicado."); }
-					},
+							/**
+							* Valida el dígito verificador de una CI uruguaya (6 o 7 dígitos + DV).
+							* Basado en el algoritmo oficial de producto escalar.
+							*/
+							validarCIUruguaya(ci) {
+								let numero = ci.replace(/\D/g, ''); // Limpiar caracteres no numéricos
+								if (numero.length < 7 || numero.length > 8) return false;
+								
+								// Si tiene 7 dígitos, normalizar a 8 agregando un cero inicial
+								if (numero.length === 7) numero = '0' + numero;
 
-					async buscarHistorial() {
-						try {
-							const res = await fetch(`/DARI/api/movimientos/historial/?codigo=${this.nuevoMovimiento.codigo_expediente}`);
-							const data = await res.json();
-							this.historialBusqueda = data.historial;
-						} catch(e){ console.error(e); }
-					},
+								const digitos = numero.split('').map(Number);
+								const dvIngresado = digitos.pop(); // Último dígito
+								const factores = [2, 9, 8, 7, 6, 3, 4];
+								
+								let suma = 0;
+								for (let i = 0; i < 7; i++) {
+									suma += digitos[i] * factores[i];
+								}
 
-					// --- MÉTODOS ESPECÍFICOS DRBPA ---
-					async cargarMaestrosDRBPA() {
-						try {
-							const response = await fetch('/DRBPA/api/maestros-drbpa/');
-							const data = await response.json();
-							this.maestros = data;
-						} catch (e) { console.error("Error cargando maestros DRBPA"); }
-					},
+								const resto = suma % 10;
+								const dvCalculado = (10 - resto) % 10;
+								return dvCalculado === dvIngresado;
+							},
 
-					validarCIUruguaya(ci) {
-						let numero = ci.replace(/\D/g, ''); // Solo números
-						
-						// Si tiene menos de 7 u 8 dígitos, no es una CI completa con DV
-						if (numero.length < 7 || numero.length > 8) return false;
+							/**
+							* Lógica de validación para la App DARI (Sección Vincular Persona).
+							* Valida integridad de CI uruguaya y autocompleta si ya existe en DB.
+							*/
+							async verificarPersonaDARI() {
+								// 1. Resetear estados cada vez que el usuario sale del campo
+								this.documentoValidoDARI = false;
+								this.personaExisteDARI = false;
 
-						const digitos = numero.split('').map(Number);
-						const dvIngresado = digitos.pop(); // El último es el DV
-						let suma = 0;
-
-						if (digitos.length === 7) {
-							// Caso 7 dígitos: Factores <8, 1, 2, 3, 4, 7, 6>
-							const factores = [8, 1, 2, 3, 4, 7, 6];
-							for (let i = 0; i < 7; i++) {
-								suma += digitos[i] * factores[i];
-							}
-						} else if (digitos.length === 6) {
-							// Caso 6 dígitos: Factores <1, 2, 3, 4, 7, 6>
-							const factores = [1, 2, 3, 4, 7, 6];
-							for (let i = 0; i < 6; i++) {
-								suma += digitos[i] * factores[i];
-							}
-						}
-
-						const dvCalculado = suma % 10;
-						return dvCalculado === dvIngresado;
-					},
-
-					// 2. Lógica de verificación actualizada
-					async verificarPersona() {
-						// Reset de estados al iniciar nueva verificación
-						this.documentoValido = false;
-						this.personaExiste = false;
-
-						if (!this.form.tipo_doc_id) {
-							if (this.form.documento) {
-								alert("POR FAVOR: Seleccione primero el TIPO DE DOCUMENTO.");
-								this.form.documento = '';
-							}
-							return;
-						}
-
-						const tipoSeleccionado = this.tiposDocumento.find(t => t.id === this.form.tipo_doc_id);
-						const esCI = tipoSeleccionado && tipoSeleccionado.nombre.toUpperCase().includes("CEDULA");
-
-						if (this.form.documento.length > 5) {
-							// Si es CI, aplicamos algoritmo
-							if (esCI) {
-								if (!this.validarCIUruguaya(this.form.documento)) {
-									alert("ATENCIÓN: El número de Cédula ingresado no es válido (Dígito verificador incorrecto).");
-									this.form.documento = '';
+								// 2. Validación de orden: Primero el tipo de documento
+								if (!this.nuevaPersona.tipo_documento_id) {
+									if (this.nuevaPersona.documento) {
+										alert("FLUJO OBLIGATORIO: Seleccione primero el TIPO DE DOCUMENTO antes de ingresar el número.");
+										this.nuevaPersona.documento = '';
+									}
 									return;
 								}
-							}
-							
-							// Si llegó aquí, el documento es formalmente válido
-							this.documentoValido = true;
 
-							// Ahora consultamos si ya existe en la base de datos
-							try {
-								const res = await fetch(`/DARI/api/buscar/?q=${this.form.documento}&tipo=persona`);
-								const data = await res.json();
-								
-								if (data.resultados.length > 0) {
-									const p = data.resultados[0];
-									this.form.p_nombre = p.primer_nombre;
-									this.form.s_nombre = p.segundo_nombre;
-									this.form.p_apellido = p.primer_apellido;
-									this.form.s_apellido = p.segundo_apellido;
-									this.form.fecha_nac = p.fecha_nacimiento_iso;
-									this.form.pais_nombre = p.nacionalidad_nombre;
-									this.personaExiste = true;
+								// 3. Detectar si es Cédula para aplicar algoritmo
+								const tipoSel = this.tiposDocumento.find(t => t.id === this.nuevaPersona.tipo_documento_id);
+								const esCI = tipoSel && tipoSel.nombre.toUpperCase().includes("CEDULA");
+
+								// Limpiamos espacios por si pegaron el número
+								const docLimpio = this.nuevaPersona.documento.trim();
+
+								if (docLimpio.length > 5) {
+									// A. Validar integridad física del documento (Algoritmo)
+									if (esCI) {
+										if (!this.validarCIUruguaya(docLimpio)) {
+											alert("DATOS ERRÓNEOS: El número de Cédula no es válido (Fallo en el dígito verificador).");
+											this.nuevaPersona.documento = '';
+											return;
+										}
+									}
+
+									// B. MARCAR COMO VÁLIDO (Esto activa el mensaje de "Sujeto nuevo" inmediatamente)
+									this.documentoValidoDARI = true;
+
+									// C. Consultar existencia en el servidor (Búsqueda por coincidencia exacta)
+									try {
+										const res = await fetch(`/DARI/api/buscar/?q=${encodeURIComponent(docLimpio)}&tipo=persona`);
+										const data = await res.json();
+										
+										if (data.resultados.length > 0) {
+											// Filtramos por documento exacto para evitar errores de nombres similares
+											const p = data.resultados.find(r => r.documento.includes(docLimpio));
+											
+											if (p) {
+												// Autocompletado de la ficha
+												this.nuevaPersona.primer_nombre = p.primer_nombre;
+												this.nuevaPersona.segundo_nombre = p.segundo_nombre;
+												this.nuevaPersona.primer_apellido = p.primer_apellido;
+												this.nuevaPersona.segundo_apellido = p.segundo_apellido;
+												this.nuevaPersona.fecha_nacimiento = p.fecha_nacimiento_iso;
+												this.nuevaPersona.nacionalidad_nombre = p.nacionalidad_nombre;
+												this.personaExisteDARI = true; // Cambia el mensaje a "Persona registrada"
+											}
+										}
+									} catch (e) {
+										console.error("Error en la comunicación con la API de búsqueda:", e);
+									}
 								}
-							} catch (e) { console.error("Error de red"); }
+							},
+
+				// =========================================================================
+				// 8. MÓDULO ESPECÍFICO DRBPA (PERSONAS AUSENTES)
+				// =========================================================================
+
+				async cargarMaestrosDRBPA() {
+					try {
+						const response = await fetch('/DRBPA/api/maestros-drbpa/');
+						const data = await response.json();
+						this.maestros = data;
+					} catch (e) { console.error("Error al cargar maestros DRBPA"); }
+				},
+
+				/**
+				* Lógica de validación para la App DRBPA (Nuevo Registro).
+				*/
+				async verificarPersona() {
+					this.documentoValido = false;
+					this.personaExiste = false;
+
+					if (!this.form.tipo_doc_id) {
+						if (this.form.documento) {
+							alert("POR FAVOR: Seleccione primero el TIPO DE DOCUMENTO.");
+							this.form.documento = '';
 						}
-					},
-
-					filtrarDeps() {
-						this.dependenciasFiltradas = this.maestros.dependencias.filter(
-							d => d.departamento_id === this.form.depto_id
-						);
-					},
-
-					async guardarFicha() {
-						try {
-							const response = await fetch('/DRBPA/api/guardar-ficha/', {
-								method: 'POST',
-								headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
-								body: JSON.stringify(this.form)
-							});
-							if (response.ok) {
-								const data = await response.json();
-								alert("Ficha creada con éxito. Caso Nro: " + data.nro_caso);
-								window.location.href = "/DRBPA/";
-							}
-						} catch (e) { alert("Error al guardar la ficha"); }
+						return;
 					}
-				} // Fin de methods
+
+					const tipoSeleccionado = this.tiposDocumento.find(t => t.id === this.form.tipo_doc_id);
+					const esCI = tipoSeleccionado && tipoSeleccionado.nombre.toUpperCase().includes("CEDULA");
+
+					if (this.form.documento.length > 5) {
+						if (esCI && !this.validarCIUruguaya(this.form.documento)) {
+							alert("ATENCIÓN: Cédula no válida.");
+							this.form.documento = '';
+							return;
+						}
+						this.documentoValido = true;
+
+						try {
+							const res = await fetch(`/DARI/api/buscar/?q=${this.form.documento}&tipo=persona`);
+							const data = await res.json();
+							if (data.resultados.length > 0) {
+								const p = data.resultados[0];
+								this.form.p_nombre = p.primer_nombre;
+								this.form.s_nombre = p.segundo_nombre;
+								this.form.p_apellido = p.primer_apellido;
+								this.form.s_apellido = p.segundo_apellido;
+								this.form.fecha_nac = p.fecha_nacimiento_iso;
+								this.form.pais_nombre = p.nacionalidad_nombre;
+								this.personaExiste = true;
+							}
+						} catch (e) { console.error("Error de verificación remota DRBPA"); }
+					}
+				},
+
+				/**
+				* Filtra dinámicamente las seccionales de Uruguay según el departamento elegido.
+				*/
+				filtrarDeps() {
+					if (!this.maestros.dependencias) return;
+					this.dependenciasFiltradas = this.maestros.dependencias.filter(
+						d => d.departamento_id === this.form.depto_id
+					);
+				},
+
+				async guardarFicha() {
+					try {
+						const response = await fetch('/DRBPA/api/guardar-ficha/', {
+							method: 'POST',
+							headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+							body: JSON.stringify(this.form)
+						});
+						if (response.ok) {
+							const data = await response.json();
+							alert("Ficha creada con éxito. Caso Nro: " + data.nro_caso);
+							window.location.href = "/DRBPA/";
+						}
+					} catch (e) { alert("Error al procesar el registro de ausencia."); }
+				},
+
+				// =========================================================================
+				// 9. EDICIÓN BIOGRÁFICA Y OTROS (PERFIL)
+				// =========================================================================
+
+				activarEdicionPersona() {
+					this.personaEdit = {
+						primer_nombre: this.personaPerfil.primer_nombre,
+						segundo_nombre: this.personaPerfil.segundo_nombre,
+						primer_apellido: this.personaPerfil.primer_apellido,
+						segundo_apellido: this.personaPerfil.segundo_apellido,
+						fecha_nacimiento: this.personaPerfil.fecha_nacimiento_iso,
+						nacionalidad_nombre: this.personaPerfil.nacionalidad
+					};
+					this.editandoPersona = true;
+				},
+
+				async guardarEdicionPersona() {
+					try {
+						await this.apiFetch(`/api/persona/${this.personaPerfil.id}/update-bio/`, {
+							method: 'POST',
+							headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+							body: JSON.stringify(this.personaEdit)
+						});
+						alert("Perfil actualizado correctamente.");
+						this.editandoPersona = false;
+						this.verPerfilPersona(this.personaPerfil.id);
+					} catch (e) { alert("Error al actualizar la biografía."); }
+				},
+
+				async guardarNuevoAliasPerfil() {
+					if (!this.nuevoAliasPerfil.trim()) return;
+					try {
+						await this.apiFetch(`/api/persona/${this.personaPerfil.id}/alias/`, {
+							method: 'POST',
+							headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+							body: JSON.stringify({ alias: this.nuevoAliasPerfil })
+						});
+						this.nuevoAliasPerfil = '';
+						this.verPerfilPersona(this.personaPerfil.id);
+					} catch (e) { console.error(e); }
+				},
+
+				async guardarNuevoDocPerfil() {
+					try {
+						await this.apiFetch(`/api/persona/${this.personaPerfil.id}/identificacion/`, {
+							method: 'POST',
+							headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+							body: JSON.stringify(this.nuevoDocPerfil)
+						});
+						this.nuevoDocPerfil = { tipo_documento_id: '', numero: '' };
+						this.verPerfilPersona(this.personaPerfil.id);
+					} catch (e) { alert("Error al añadir documento o documento ya existente."); }
+				},
+
+				async guardarCambioAlfresco() {
+					try {
+						await this.apiFetch(`/api/expediente/${this.expediente.id}/alfresco/`, {
+							method: 'POST',
+							headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+							body: JSON.stringify({ estado: this.expediente.subido_alfresco })
+						});
+						alert("Estado digital actualizado.");
+					} catch (e) { console.error(e); }
+				},
+
+				async buscarHistorial() {
+					try {
+						const data = await this.apiFetch(`/api/movimientos/historial/?codigo=${this.nuevoMovimiento.codigo_expediente}`);
+						this.historialBusqueda = data.historial;
+					} catch (e) { console.error(e); }
+				},
+
+				async guardarNuevoExpediente() {
+					try {
+						const data = await this.apiFetch('/api/expediente/crear/', {
+							method: 'POST',
+							headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+							body: JSON.stringify(this.nuevoExpediente)
+						});
+						alert("Expediente creado con éxito.");
+						this.cargarRecientes();
+						this.verDetalles(data.id);
+					} catch (e) { alert("Error al crear: el código podría estar duplicado o hubo un fallo de red."); }
+				}
+} // fin methods
 			}).mount('#app')
 		</script>
         
