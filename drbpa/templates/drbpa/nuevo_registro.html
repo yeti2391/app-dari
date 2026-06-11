@@ -41,11 +41,21 @@
                         </select>
                     </div>
                     <div class="col-8 col-12-mobile">
-                        <label>Nro. de Documento (Escriba para verificar si ya existe)</label>
-                        <input type="text" v-model="form.documento" @blur="verificarPersona" placeholder="Ej: 12345678">
+                        <label>Nro. de Documento</label>
+                
+                        <input type="text" v-model="form.documento" @blur="verificarPersona" 
+                            :style="documentoValido ? 'border-color: #28a745;' : ''">
+                        
+                        <!-- Mensaje 1: Existe en DB -->
                         <small v-if="personaExiste" style="color: #28a745; font-weight: bold;">
-                            <i class="fas fa-check-double"></i> Persona detectada. Datos personales autocompletados.
+                            <i class="fas fa-check-double"></i> Persona registrada. Información autocompletada.
                         </small>
+
+                        <!-- Mensaje 2: Es válido pero es nuevo (Solo sale si pasó el algoritmo) -->
+                        <small v-else-if="documentoValido && !personaExiste" style="color: #0056b3; font-weight: bold;">
+                            <i class="fas fa-id-card"></i> Documento verificado. Sujeto nuevo para el sistema.
+                        </small>
+                        
                     </div>
 
                     <!-- FILA 3: NOMBRES (50/50) -->

@@ -146,6 +146,7 @@
 							nro_sgsp: '', tipificacion: '',
 							f_hecho: '', f_ingreso_sgsp: ''
 						},
+						documentoValido: false,
 						personaExiste: false,
 						dependenciasFiltradas: []
 					}
@@ -209,12 +210,14 @@
 				},
 
 				methods: {
+					// --- HELPER PARA API ---
 					async apiFetch(url, options = {}) {
 						const response = await fetch(`/DARI${url}`, options);
 						if (!response.ok) throw new Error('Error en la petición');
 						return await response.json();
 					},
 
+					// --- CARGAS INICIALES ---
 					async cargarOficinas() {
 						try { const data = await this.apiFetch('/api/oficinas/'); this.oficinas = data.oficinas; }
 						catch (e) { console.error("Error oficinas:", e); }
@@ -232,6 +235,7 @@
 						catch (e) { console.error("Error recientes:", e); }
 					},
 
+					// --- BÚSQUEDAS (DARI) ---
 					async buscar() {
 						if (!this.queryBusqueda.trim()) return;
 						this.cargando = true;
@@ -260,6 +264,7 @@
 						finally { this.cargando = false; }
 					},
 
+					// --- GESTIÓN DE EXPEDIENTES ---
 					async verDetalles(id) {
 						this.cargando = true;
 						try {
@@ -268,7 +273,7 @@
 							this.personasVinculadas = data.personas;
 							this.ultimoDestinoId = data.movimientos.length > 0 ? data.movimientos[0].destino_id : data.oficina_id;
 							this.seccionActual = 'detalles';
-						} catch (e) { console.error(e); }
+						} catch (error) { alert("Error al cargar detalles"); }
 						finally { this.cargando = false; }
 					},
 
@@ -285,6 +290,7 @@
 						} catch (e) { console.error(e); }
 					},
 
+					// --- GESTIÓN DE PERSONAS ---
 					async verPerfilPersona(id) {
 						try {
 							const data = await this.apiFetch(`/api/persona/${id}/`);
@@ -454,22 +460,80 @@
 						} catch (e) { console.error("Error cargando maestros DRBPA"); }
 					},
 
-					async verificarPersona() {
-						if(this.form.documento.length > 5) {
-							const res = await fetch(`/DARI/api/buscar/?q=${this.form.documento}&tipo=persona`);
-							const data = await res.json();
-							if(data.resultados.length > 0) {
-								const p = data.resultados[0];
-								this.form.p_nombre = p.primer_nombre;
-								this.form.s_nombre = p.segundo_nombre;
-								this.form.p_apellido = p.primer_apellido;
-								this.form.s_apellido = p.segundo_apellido;
-								this.form.fecha_nac = p.fecha_nacimiento_iso;
-								this.form.pais_nombre = p.nacionalidad_nombre;
-								this.personaExiste = true;
-							} else {
-								this.personaExiste = false;
+					validarCIUruguaya(ci) {
+						let numero = ci.replace(/\D/g, ''); // Solo números
+						
+						// Si tiene menos de 7 u 8 dígitos, no es una CI completa con DV
+						if (numero.length < 7 || numero.length > 8) return false;
+
+						const digitos = numero.split('').map(Number);
+						const dvIngresado = digitos.pop(); // El último es el DV
+						let suma = 0;
+
+						if (digitos.length === 7) {
+							// Caso 7 dígitos: Factores <8, 1, 2, 3, 4, 7, 6>
+							const factores = [8, 1, 2, 3, 4, 7, 6];
+							for (let i = 0; i < 7; i++) {
+								suma += digitos[i] * factores[i];
 							}
+						} else if (digitos.length === 6) {
+							// Caso 6 dígitos: Factores <1, 2, 3, 4, 7, 6>
+							const factores = [1, 2, 3, 4, 7, 6];
+							for (let i = 0; i < 6; i++) {
+								suma += digitos[i] * factores[i];
+							}
+						}
+
+						const dvCalculado = suma % 10;
+						return dvCalculado === dvIngresado;
+					},
+
+					// 2. Lógica de verificación actualizada
+					async verificarPersona() {
+						// Reset de estados al iniciar nueva verificación
+						this.documentoValido = false;
+						this.personaExiste = false;
+
+						if (!this.form.tipo_doc_id) {
+							if (this.form.documento) {
+								alert("POR FAVOR: Seleccione primero el TIPO DE DOCUMENTO.");
+								this.form.documento = '';
+							}
+							return;
+						}
+
+						const tipoSeleccionado = this.tiposDocumento.find(t => t.id === this.form.tipo_doc_id);
+						const esCI = tipoSeleccionado && tipoSeleccionado.nombre.toUpperCase().includes("CEDULA");
+
+						if (this.form.documento.length > 5) {
+							// Si es CI, aplicamos algoritmo
+							if (esCI) {
+								if (!this.validarCIUruguaya(this.form.documento)) {
+									alert("ATENCIÓN: El número de Cédula ingresado no es válido (Dígito verificador incorrecto).");
+									this.form.documento = '';
+									return;
+								}
+							}
+							
+							// Si llegó aquí, el documento es formalmente válido
+							this.documentoValido = true;
+
+							// Ahora consultamos si ya existe en la base de datos
+							try {
+								const res = await fetch(`/DARI/api/buscar/?q=${this.form.documento}&tipo=persona`);
+								const data = await res.json();
+								
+								if (data.resultados.length > 0) {
+									const p = data.resultados[0];
+									this.form.p_nombre = p.primer_nombre;
+									this.form.s_nombre = p.segundo_nombre;
+									this.form.p_apellido = p.primer_apellido;
+									this.form.s_apellido = p.segundo_apellido;
+									this.form.fecha_nac = p.fecha_nacimiento_iso;
+									this.form.pais_nombre = p.nacionalidad_nombre;
+									this.personaExiste = true;
+								}
+							} catch (e) { console.error("Error de red"); }
 						}
 					},
 
@@ -483,21 +547,17 @@
 						try {
 							const response = await fetch('/DRBPA/api/guardar-ficha/', {
 								method: 'POST',
-								headers: {
-									'Content-Type': 'application/json',
-									'X-CSRFToken': '{{ csrf_token }}'
-								},
+								headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
 								body: JSON.stringify(this.form)
 							});
-							
 							if (response.ok) {
 								const data = await response.json();
 								alert("Ficha creada con éxito. Caso Nro: " + data.nro_caso);
-								window.location.href = "/DRBPA/"; // Redirigir al panel
+								window.location.href = "/DRBPA/";
 							}
 						} catch (e) { alert("Error al guardar la ficha"); }
 					}
-				}
+				} // Fin de methods
 			}).mount('#app')
 		</script>
         
